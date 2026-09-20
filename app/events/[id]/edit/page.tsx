@@ -1,7 +1,7 @@
 import EventForm from "@/app/components/EventForm";
 import { getEvent } from "@/lib/events";
 import { createSupabaseClient } from "@/lib/supabase";
-import type { VenueOption } from "@/lib/event-form";
+import type { OrgOption, VenueOption } from "@/lib/event-form";
 import { notFound } from "next/navigation";
 
 export default async function EditEventPage({
@@ -21,10 +21,16 @@ export default async function EditEventPage({
   if (!event) notFound();
 
   const supabase = createSupabaseClient();
-  const { data } = await supabase
-    .from("venues")
-    .select("id, name, region")
-    .order("name");
+  const [{ data: venues }, { data: orgs }] = await Promise.all([
+    supabase.from("venues").select("id, name, region").order("name"),
+    supabase.from("circles").select("id, name, kind").order("name"),
+  ]);
 
-  return <EventForm venues={(data ?? []) as VenueOption[]} event={event} />;
+  return (
+    <EventForm
+      venues={(venues ?? []) as VenueOption[]}
+      orgs={(orgs ?? []) as OrgOption[]}
+      event={event}
+    />
+  );
 }

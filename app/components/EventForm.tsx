@@ -7,11 +7,12 @@ import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import type { EventImage, EventRow } from "@/lib/events";
 import {
-  fromDatetimeLocalValue,
-  toDatetimeLocalValue,
+  categoryOptions,
+  toDateInputValue,
+  type OrgOption,
   type VenueOption,
 } from "@/lib/event-form";
-import { initialPlaceMode, regionOptions } from "@/lib/event-payload";
+import { initialOrgMode, initialPlaceMode, regionOptions } from "@/lib/event-payload";
 import {
   compressImageFile,
   MAX_EVENT_IMAGES,
@@ -23,9 +24,11 @@ const inputClass =
 
 export default function EventForm({
   venues,
+  orgs,
   event,
 }: {
   venues: VenueOption[];
+  orgs: OrgOption[];
   event?: EventRow & { images?: EventImage[] };
 }) {
   const isEdit = Boolean(event);
@@ -34,10 +37,10 @@ export default function EventForm({
   const [title, setTitle] = useState(event?.title ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
   const [startAt, setStartAt] = useState(
-    event?.start_at ? toDatetimeLocalValue(event.start_at) : "",
+    event?.start_at ? toDateInputValue(event.start_at) : "",
   );
   const [endAt, setEndAt] = useState(
-    event?.end_at ? toDatetimeLocalValue(event.end_at) : "",
+    event?.end_at ? toDateInputValue(event.end_at) : "",
   );
   const [placeMode, setPlaceMode] = useState<"venue" | "text">(
     initialPlaceMode(event, venues),
@@ -45,8 +48,22 @@ export default function EventForm({
   const [venueId, setVenueId] = useState(event?.venue_id ?? venues[0]?.id ?? "");
   const [locationText, setLocationText] = useState(event?.location_text ?? "");
   const [region, setRegion] = useState(event?.region || venues[0]?.region || regionOptions()[0]);
-  const [genre, setGenre] = useState(event?.genre ?? "");
-  const [medium, setMedium] = useState(event?.medium ?? "");
+  const [genre, setGenre] = useState(
+    event?.genre && categoryOptions(event.genre).includes(event.genre)
+      ? event.genre
+      : "",
+  );
+  const [orgMode, setOrgMode] = useState<"org" | "text">(initialOrgMode(event, orgs));
+  const [circleId, setCircleId] = useState(event?.circle_id ?? orgs[0]?.id ?? "");
+  const [timeText, setTimeText] = useState(event?.time_text ?? "");
+  const [scheduleNote, setScheduleNote] = useState(event?.schedule_note ?? "");
+  const [feeText, setFeeText] = useState(event?.fee_text ?? "");
+  const [organizer, setOrganizer] = useState(event?.organizer ?? "");
+  const [contactName, setContactName] = useState(event?.contact_name ?? "");
+  const [contactPhone, setContactPhone] = useState(event?.contact_phone ?? "");
+  const [contactEmail, setContactEmail] = useState(event?.contact_email ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(event?.website_url ?? "");
+  const [parkingText, setParkingText] = useState(event?.parking_text ?? "");
   const [keptImages, setKeptImages] = useState<EventImage[]>(event?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -97,7 +114,12 @@ export default function EventForm({
     setError(null);
 
     if (!title.trim() || !startAt) {
-      setError("タイトルと開始日時は必須です。");
+      setError("タイトルと開始日は必須です。");
+      return;
+    }
+
+    if (!genre) {
+      setError("カテゴリを選んでください。");
       return;
     }
 
@@ -111,16 +133,26 @@ export default function EventForm({
       return;
     }
 
+    const emptyToNull = (value: string) => value.trim() || null;
     const payload = {
       title: title.trim(),
-      description: description.trim() || null,
-      start_at: fromDatetimeLocalValue(startAt),
-      end_at: endAt ? fromDatetimeLocalValue(endAt) : null,
+      description: emptyToNull(description),
+      start_at: startAt,
+      end_at: endAt || null,
       venue_id: placeMode === "venue" ? venueId : null,
       location_text: placeMode === "text" ? locationText.trim() : null,
       region,
-      genre: genre.trim() || null,
-      medium: medium.trim() || null,
+      genre,
+      time_text: emptyToNull(timeText),
+      schedule_note: emptyToNull(scheduleNote),
+      fee_text: emptyToNull(feeText),
+      circle_id: orgMode === "org" && circleId ? circleId : null,
+      organizer: orgMode === "text" ? emptyToNull(organizer) : null,
+      contact_name: emptyToNull(contactName),
+      contact_phone: emptyToNull(contactPhone),
+      contact_email: emptyToNull(contactEmail),
+      website_url: emptyToNull(websiteUrl),
+      parking_text: emptyToNull(parkingText),
     };
 
     if (keptImages.length + files.length > MAX_EVENT_IMAGES) {
@@ -211,10 +243,30 @@ export default function EventForm({
         </label>
 
         <label className="block text-sm">
-          開始
+          カテゴリ
+          <select
+            required
+            value={genre}
+            onChange={(e) => setGenre(e.target.value)}
+            className={`${inputClass} mt-1`}
+          >
+            <option value="">選択してください</option>
+            {categoryOptions(genre).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="-mt-2 text-xs text-zinc-500">
+          公募・レジデンスは応募するもの。見に行く展示は「展示」です。
+        </p>
+
+        <label className="block text-sm">
+          開始日
           <input
             required
-            type="datetime-local"
+            type="date"
             value={startAt}
             onChange={(e) => setStartAt(e.target.value)}
             className={`${inputClass} mt-1`}
@@ -222,9 +274,9 @@ export default function EventForm({
         </label>
 
         <label className="block text-sm">
-          終了（任意）
+          終了日（任意）
           <input
-            type="datetime-local"
+            type="date"
             value={endAt}
             onChange={(e) => setEndAt(e.target.value)}
             className={`${inputClass} mt-1`}
@@ -291,7 +343,7 @@ export default function EventForm({
         )}
 
         <label className="block text-sm">
-          地域
+          市
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
@@ -306,21 +358,136 @@ export default function EventForm({
         </label>
 
         <label className="block text-sm">
-          ジャンル（任意）
+          開催時間（任意）
           <input
-            value={genre}
-            onChange={(e) => setGenre(e.target.value)}
-            placeholder="例: イラスト・アート"
+            value={timeText}
+            onChange={(e) => setTimeText(e.target.value)}
+            placeholder="例: 10:00〜17:00（最終入場 16:30）"
             className={`${inputClass} mt-1`}
           />
         </label>
 
         <label className="block text-sm">
-          画材（任意）
+          開催日の補足（任意）
           <input
-            value={medium}
-            onChange={(e) => setMedium(e.target.value)}
-            placeholder="例: 水彩"
+            value={scheduleNote}
+            onChange={(e) => setScheduleNote(e.target.value)}
+            placeholder="例: 月曜休、祝日は開館"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          料金（任意）
+          <input
+            value={feeText}
+            onChange={(e) => setFeeText(e.target.value)}
+            placeholder="例: 一般 1,000円 / 無料"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <fieldset className="space-y-2 text-sm">
+          <legend>主催（任意）</legend>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="orgMode"
+              checked={orgMode === "org"}
+              disabled={orgs.length === 0}
+              onChange={() => setOrgMode("org")}
+            />
+            登録済み団体から選ぶ
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="orgMode"
+              checked={orgMode === "text"}
+              onChange={() => setOrgMode("text")}
+            />
+            手打ちする（団体には登録されない）
+          </label>
+        </fieldset>
+
+        {orgMode === "org" ? (
+          <label className="block text-sm">
+            団体
+            <select
+              value={circleId}
+              onChange={(e) => setCircleId(e.target.value)}
+              className={`${inputClass} mt-1`}
+            >
+              {orgs.length === 0 ? (
+                <option value="">登録済み団体はまだありません</option>
+              ) : (
+                orgs.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                    {org.kind ? `（${org.kind}）` : ""}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        ) : (
+          <label className="block text-sm">
+            主催（手打ち）
+            <input
+              value={organizer}
+              onChange={(e) => setOrganizer(e.target.value)}
+              placeholder="例: ○○実行委員会"
+              className={`${inputClass} mt-1`}
+            />
+          </label>
+        )}
+
+        <label className="block text-sm">
+          問い合わせ先（任意）
+          <input
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          電話（任意）
+          <input
+            type="tel"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          メール（任意）
+          <input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          HP（任意）
+          <input
+            type="url"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            placeholder="https://"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          駐車場（任意）
+          <input
+            value={parkingText}
+            onChange={(e) => setParkingText(e.target.value)}
+            placeholder="例: 無料20台 / なし"
             className={`${inputClass} mt-1`}
           />
         </label>

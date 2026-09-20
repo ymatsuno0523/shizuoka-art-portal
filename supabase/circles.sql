@@ -1,4 +1,6 @@
--- サークル・教室 + 画像テーブル + Storage
+-- 団体（サークル・教室・企業・その他）+ 画像テーブル + Storage
+-- テーブル名は circles のまま。画面上の呼び方は団体。
+-- イベントへの紐づけは、circles と events の両方があるときだけ足す。
 create table if not exists public.circles (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -6,9 +8,61 @@ create table if not exists public.circles (
   address text,
   region text,
   genre text,
+  kind text not null default 'サークル',
   created_by uuid references auth.users (id),
   created_at timestamptz not null default now()
 );
+
+alter table public.circles add column if not exists kind text;
+alter table public.circles add column if not exists representative text;
+alter table public.circles add column if not exists phone text;
+alter table public.circles add column if not exists email text;
+alter table public.circles add column if not exists website_url text;
+alter table public.circles add column if not exists sns_instagram text;
+alter table public.circles add column if not exists sns_x text;
+alter table public.circles add column if not exists sns_facebook text;
+alter table public.circles add column if not exists sns_youtube text;
+alter table public.circles add column if not exists sns_tiktok text;
+alter table public.circles add column if not exists sns_line text;
+
+update public.circles set kind = '教室・スクール' where kind in ('スクール', '教室');
+update public.circles set kind = '企業・スタジオ' where kind = '企業';
+update public.circles
+set kind = 'その他'
+where kind is null
+   or kind not in (
+     'サークル',
+     '教室・スクール',
+     '企業・スタジオ',
+     'その他'
+   );
+
+alter table public.circles
+  alter column kind set default 'サークル';
+
+alter table public.circles
+  alter column kind set not null;
+
+alter table public.circles drop constraint if exists circles_kind_check;
+alter table public.circles
+  add constraint circles_kind_check
+  check (
+    kind in (
+      'サークル',
+      '教室・スクール',
+      '企業・スタジオ',
+      'その他'
+    )
+  );
+
+do $$
+begin
+  if to_regclass('public.events') is not null then
+    alter table public.events
+      add column if not exists circle_id uuid references public.circles (id) on delete set null;
+    execute 'create index if not exists events_circle_id_idx on public.events (circle_id)';
+  end if;
+end $$;
 
 alter table public.circles enable row level security;
 

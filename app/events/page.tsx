@@ -1,9 +1,15 @@
 import Link from "next/link";
-import EventCalendar from "@/app/components/EventCalendar";
-import PlacesMap from "@/app/components/PlacesMap";
+import EventBrowse from "@/app/components/EventBrowse";
+import FilterSheet from "@/app/components/FilterSheet";
 import ViewSwitcher from "@/app/components/ViewSwitcher";
-import { formatEventDate, getEvents } from "@/lib/events";
-import { pinFromRegion } from "@/lib/geo";
+import { CATEGORIES, REGIONS } from "@/lib/event-form";
+import { getEvents, isPastEvent } from "@/lib/events";
+import {
+  joinFilters,
+  matchesFilter,
+  parseFilterValues,
+  type SearchParamValue,
+} from "@/lib/search-filters";
 
 const EVENT_VIEWS = [
   { id: "list", label: "一覧" },
@@ -14,11 +20,37 @@ const EVENT_VIEWS = [
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    region?: SearchParamValue;
+    genre?: SearchParamValue;
+    past?: string;
+    going?: string;
+    saved?: string;
+  }>;
 }) {
-  const { view: viewParam } = await searchParams;
+  const {
+    view: viewParam,
+    region: regionParam,
+    genre: genreParam,
+    past: pastParam,
+    going: goingParam,
+    saved: savedParam,
+  } = await searchParams;
   const view =
     viewParam === "map" || viewParam === "calendar" ? viewParam : "list";
+  const regions = parseFilterValues(regionParam, REGIONS);
+  const genres = parseFilterValues(genreParam, CATEGORIES);
+  const showPast = pastParam === "1";
+  const going = goingParam === "1";
+  const saved = savedParam === "1";
+  const filterParams = {
+    region: joinFilters(regions, REGIONS),
+    genre: joinFilters(genres, CATEGORIES),
+    past: showPast ? "1" : undefined,
+    going: going ? "1" : undefined,
+    saved: saved ? "1" : undefined,
+  };
   const { events, error } = await getEvents();
 
   if (error) {
@@ -37,13 +69,12 @@ export default async function EventsPage({
     );
   }
 
-  const pins = events.map((event) =>
-    pinFromRegion(event.id, event.region, {
-      title: event.title,
-      href: `/events/${event.id}`,
-      subtitle: `${formatEventDate(event.start_at)} · ${event.placeLabel}`,
-    }),
-  );
+  const filtered = events.filter((event) => {
+    if (!matchesFilter(event.region, regions)) return false;
+    if (!matchesFilter(event.genre, genres)) return false;
+    if (!showPast && isPastEvent(event)) return false;
+    return true;
+  });
 
   return (
     <main className="px-4 py-6">
@@ -56,59 +87,32 @@ export default async function EventsPage({
           投稿する
         </Link>
       </div>
-      <ViewSwitcher basePath="/events" views={[...EVENT_VIEWS]} current={view} />
-
-      {view === "map" ? (
-        <PlacesMap pins={pins} />
-      ) : view === "calendar" ? (
-        <EventCalendar
-          events={events.map((event) => ({
-            id: event.id,
-            title: event.title,
-            start_at: event.start_at,
-            end_at: event.end_at,
-            placeLabel: event.placeLabel,
-          }))}
-        />
-      ) : events.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          まだイベントがありません。Supabase の events
-          テーブルに1件追加すると、ここに表示されます。
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/events/${event.id}`}
-                className="flex rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-              >
-                {event.images[0] ? (
-                  <img
-                    src={event.images[0].url}
-                    alt=""
-                    className="h-24 w-24 shrink-0 rounded-[6px] object-cover"
-                  />
-                ) : (
-                  <div className="h-24 w-24 shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
-                )}
-                <div className="min-w-0 flex-1 px-3 py-2">
-                  <p className="text-xs text-zinc-500">
-                    {formatEventDate(event.start_at)}
-                  </p>
-                  <p className="mt-0.5 truncate font-semibold">{event.title}</p>
-                  <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
-                    {event.placeLabel}
-                  </p>
-                  {event.genre ? (
-                    <p className="mt-1 truncate text-xs text-zinc-500">{event.genre}</p>
-                  ) : null}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ViewSwitcher
+        basePath="/events"
+        views={[...EVENT_VIEWS]}
+        current={view}
+        params={filterParams}
+      />
+      <FilterSheet
+        path="/events"
+        view={view}
+        groups={[
+          { key: "region", label: "地域", values: regions, options: REGIONS, areas: true },
+          { key: "genre", label: "ジャンル", values: genres, options: CATEGORIES },
+        ]}
+        toggles={[
+          { key: "going", label: "行きたい", checked: going },
+          { key: "saved", label: "保存した", checked: saved },
+          { key: "past", label: "終了したイベントも表示", checked: showPast },
+        ]}
+      />
+      <EventBrowse
+        view={view}
+        events={filtered}
+        emptyAll={events.length === 0}
+        going={going}
+        saved={saved}
+      />
     </main>
   );
 }

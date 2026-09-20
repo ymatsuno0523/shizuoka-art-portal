@@ -11,6 +11,22 @@ import { storagePathFromPublicUrl } from "@/lib/images";
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-background px-3 py-2 text-sm dark:border-zinc-700";
 
+type SavedEvent = {
+  id: string;
+  title: string;
+  start_at: string;
+};
+
+type SavedNamed = {
+  id: string;
+  name: string;
+};
+
+function embedOne<T>(value: T | T[] | null) {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
+
 export default function MyPageClient() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -25,6 +41,10 @@ export default function MyPageClient() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [venues, setVenues] = useState<{ id: string; name: string }[]>([]);
   const [circles, setCircles] = useState<{ id: string; name: string }[]>([]);
+  const [goingEvents, setGoingEvents] = useState<SavedEvent[]>([]);
+  const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
+  const [savedVenues, setSavedVenues] = useState<SavedNamed[]>([]);
+  const [savedCircles, setSavedCircles] = useState<SavedNamed[]>([]);
   const [profile, setProfile] = useState<{
     display_name: string | null;
     avatar_url: string | null;
@@ -36,6 +56,10 @@ export default function MyPageClient() {
       setEvents([]);
       setVenues([]);
       setCircles([]);
+      setGoingEvents([]);
+      setSavedEvents([]);
+      setSavedVenues([]);
+      setSavedCircles([]);
       setProfile(null);
       return;
     }
@@ -62,7 +86,37 @@ export default function MyPageClient() {
         .select("display_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle(),
-    ]).then(([eventResult, venueResult, circleResult, profileResult]) => {
+      supabase
+        .from("event_going")
+        .select("created_at, events(id, title, start_at)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("event_saves")
+        .select("created_at, events(id, title, start_at)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("venue_saves")
+        .select("created_at, venues(id, name)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("circle_saves")
+        .select("created_at, circles(id, name)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]).then(
+      ([
+        eventResult,
+        venueResult,
+        circleResult,
+        profileResult,
+        goingResult,
+        saveResult,
+        venueSaveResult,
+        circleSaveResult,
+      ]) => {
       if (eventResult.error) {
         setListError(eventResult.error.message);
         return;
@@ -74,6 +128,34 @@ export default function MyPageClient() {
       setEvents((eventResult.data ?? []) as EventRow[]);
       setVenues((venueResult.data ?? []) as { id: string; name: string }[]);
       setCircles((circleResult.data ?? []) as { id: string; name: string }[]);
+      setGoingEvents(
+        goingResult.error
+          ? []
+          : ((goingResult.data ?? []) as { events: SavedEvent | SavedEvent[] | null }[])
+              .map((row) => embedOne(row.events))
+              .filter((item): item is SavedEvent => Boolean(item)),
+      );
+      setSavedEvents(
+        saveResult.error
+          ? []
+          : ((saveResult.data ?? []) as { events: SavedEvent | SavedEvent[] | null }[])
+              .map((row) => embedOne(row.events))
+              .filter((item): item is SavedEvent => Boolean(item)),
+      );
+      setSavedVenues(
+        venueSaveResult.error
+          ? []
+          : ((venueSaveResult.data ?? []) as { venues: SavedNamed | SavedNamed[] | null }[])
+              .map((row) => embedOne(row.venues))
+              .filter((item): item is SavedNamed => Boolean(item)),
+      );
+      setSavedCircles(
+        circleSaveResult.error
+          ? []
+          : ((circleSaveResult.data ?? []) as { circles: SavedNamed | SavedNamed[] | null }[])
+              .map((row) => embedOne(row.circles))
+              .filter((item): item is SavedNamed => Boolean(item)),
+      );
       setListError(
         circleResult.error?.message ?? profileResult.error?.message ?? null,
       );
@@ -153,7 +235,7 @@ export default function MyPageClient() {
   }
 
   async function handleDeleteCircle(id: string) {
-    if (!confirm("このサークルを削除しますか？画像も一緒に消えます。")) return;
+    if (!confirm("この団体を削除しますか？画像も一緒に消えます。")) return;
     const supabase = createBrowserSupabase();
     const { data: images } = await supabase
       .from("circle_images")
@@ -207,7 +289,7 @@ export default function MyPageClient() {
       <main className="px-4 py-6">
         <h1 className="mb-4 text-lg font-bold">マイページ</h1>
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-          ログインするとイベント・会場・サークルを投稿・削除できます。
+          ログインすると投稿のほか、行きたい・保存が使えます。
         </p>
         <form
           className="space-y-3"
@@ -291,10 +373,53 @@ export default function MyPageClient() {
         プロフィールを編集
       </Link>
 
-      <h2 className="mb-3 text-sm font-semibold">お気に入り</h2>
-      <p className="mb-8 text-sm text-zinc-500">
-        まだお気に入りはありません。あとからイベント・会場・サークルを保存できるようにします。
-      </p>
+      <h2 className="mb-3 text-sm font-semibold">行きたい</h2>
+      {goingEvents.length === 0 ? (
+        <p className="mb-8 text-sm text-zinc-500">まだありません。</p>
+      ) : (
+        <ul className="mb-8 space-y-3">
+          {goingEvents.map((item) => (
+            <li key={item.id}>
+              <Link href={`/events/${item.id}`} className="block">
+                <p className="text-xs text-zinc-500">{formatEventDate(item.start_at)}</p>
+                <p className="mt-0.5 font-semibold">{item.title}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2 className="mb-3 text-sm font-semibold">保存した</h2>
+      {savedEvents.length === 0 && savedVenues.length === 0 && savedCircles.length === 0 ? (
+        <p className="mb-8 text-sm text-zinc-500">まだありません。</p>
+      ) : (
+        <ul className="mb-8 space-y-3">
+          {savedEvents.map((item) => (
+            <li key={`event-${item.id}`}>
+              <Link href={`/events/${item.id}`} className="block">
+                <p className="text-xs text-zinc-500">イベント · {formatEventDate(item.start_at)}</p>
+                <p className="mt-0.5 font-semibold">{item.title}</p>
+              </Link>
+            </li>
+          ))}
+          {savedVenues.map((item) => (
+            <li key={`venue-${item.id}`}>
+              <Link href={`/venues/${item.id}`} className="block">
+                <p className="text-xs text-zinc-500">会場・施設</p>
+                <p className="mt-0.5 font-semibold">{item.name}</p>
+              </Link>
+            </li>
+          ))}
+          {savedCircles.map((item) => (
+            <li key={`circle-${item.id}`}>
+              <Link href={`/circles/${item.id}`} className="block">
+                <p className="text-xs text-zinc-500">団体</p>
+                <p className="mt-0.5 font-semibold">{item.name}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <h2 className="mb-3 text-sm font-semibold">投稿したイベント</h2>
       {listError ? <p className="mb-3 text-sm text-red-600">{listError}</p> : null}
@@ -346,21 +471,29 @@ export default function MyPageClient() {
               <Link href={`/venues/${item.id}`} className="block font-semibold">
                 {item.name}
               </Link>
-              <button
-                type="button"
-                onClick={() => handleDeleteVenue(item.id)}
-                className="mt-2 text-sm text-red-600"
-              >
-                削除
-              </button>
+              <div className="mt-2 flex gap-3">
+                <Link
+                  href={`/venues/${item.id}/edit`}
+                  className="text-sm font-semibold"
+                >
+                  編集
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteVenue(item.id)}
+                  className="text-sm text-red-600"
+                >
+                  削除
+                </button>
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      <h2 className="mt-8 mb-3 text-sm font-semibold">登録したサークル</h2>
+      <h2 className="mt-8 mb-3 text-sm font-semibold">登録した団体</h2>
       {circles.length === 0 ? (
-        <p className="text-sm text-zinc-500">まだサークルがありません。</p>
+        <p className="text-sm text-zinc-500">まだ団体がありません。</p>
       ) : (
         <ul className="space-y-3">
           {circles.map((item) => (
@@ -408,7 +541,7 @@ export default function MyPageClient() {
           href="/circles/new"
           className="rounded-xl border border-zinc-300 py-2.5 text-center text-sm font-semibold dark:border-zinc-700"
         >
-          サークルを登録
+          団体を登録
         </Link>
         <button
           type="button"

@@ -28,7 +28,7 @@ export default function BackLink({
     <button
       type="button"
       onClick={handleClick}
-      className="text-sm text-zinc-500"
+      className="rounded-xl border border-zinc-300 px-8 py-2.5 text-sm font-semibold min-w-40 dark:border-zinc-700"
     >
       {children}
     </button>

@@ -7,7 +7,8 @@ import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import type { CircleImage, CircleRow } from "@/lib/circles";
 import { REGIONS } from "@/lib/event-form";
-import { regionOptions } from "@/lib/event-payload";
+import { orgKindOptions, regionOptions } from "@/lib/event-payload";
+import { SNS_LINKS } from "@/lib/sns";
 import {
   compressImageFile,
   MAX_CIRCLE_IMAGES,
@@ -18,6 +19,8 @@ const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-background px-3 py-2 text-sm dark:border-zinc-700";
 
 const BUCKET = "circle-images";
+
+const emptyToNull = (value: string) => value.trim() || null;
 
 export default function CircleForm({
   circle,
@@ -31,7 +34,20 @@ export default function CircleForm({
   const [description, setDescription] = useState(circle?.description ?? "");
   const [address, setAddress] = useState(circle?.address ?? "");
   const [region, setRegion] = useState(circle?.region || REGIONS[0]);
+  const [kind, setKind] = useState(circle?.kind || "サークル");
   const [genre, setGenre] = useState(circle?.genre ?? "");
+  const [representative, setRepresentative] = useState(circle?.representative ?? "");
+  const [phone, setPhone] = useState(circle?.phone ?? "");
+  const [email, setEmail] = useState(circle?.email ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(circle?.website_url ?? "");
+  const [sns, setSns] = useState({
+    sns_instagram: circle?.sns_instagram ?? "",
+    sns_x: circle?.sns_x ?? "",
+    sns_facebook: circle?.sns_facebook ?? "",
+    sns_youtube: circle?.sns_youtube ?? "",
+    sns_tiktok: circle?.sns_tiktok ?? "",
+    sns_line: circle?.sns_line ?? "",
+  });
   const [keptImages, setKeptImages] = useState<CircleImage[]>(circle?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -50,7 +66,7 @@ export default function CircleForm({
     return (
       <main className="px-4 py-6">
         <h1 className="mb-3 text-lg font-bold">
-          {isEdit ? "サークルを編集" : "サークル・教室を登録"}
+          {isEdit ? "団体を編集" : "団体を登録"}
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           登録するにはログインが必要です。
@@ -68,7 +84,7 @@ export default function CircleForm({
   if (isEdit && circle?.created_by && circle.created_by !== user.id) {
     return (
       <main className="px-4 py-6">
-        <p className="text-sm text-zinc-600">このサークルを編集する権限がありません。</p>
+        <p className="text-sm text-zinc-600">この団体を編集する権限がありません。</p>
         <Link href={`/circles/${circle.id}`} className="mt-3 inline-block text-sm text-zinc-500">
           詳細へ戻る
         </Link>
@@ -93,10 +109,21 @@ export default function CircleForm({
 
     const payload = {
       name: name.trim(),
-      description: description.trim() || null,
-      address: address.trim() || null,
+      kind,
+      description: emptyToNull(description),
+      address: emptyToNull(address),
       region,
-      genre: genre.trim() || null,
+      genre: emptyToNull(genre),
+      representative: emptyToNull(representative),
+      phone: emptyToNull(phone),
+      email: emptyToNull(email),
+      website_url: emptyToNull(websiteUrl),
+      sns_instagram: emptyToNull(sns.sns_instagram),
+      sns_x: emptyToNull(sns.sns_x),
+      sns_facebook: emptyToNull(sns.sns_facebook),
+      sns_youtube: emptyToNull(sns.sns_youtube),
+      sns_tiktok: emptyToNull(sns.sns_tiktok),
+      sns_line: emptyToNull(sns.sns_line),
     };
 
     setSubmitting(true);
@@ -117,7 +144,7 @@ export default function CircleForm({
     if (result.error || !result.data) {
       setSubmitting(false);
       setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/circles.sql を実行したか確認してください。`,
+        `${result.error?.message ?? "保存に失敗しました。"} supabase/circles-fields.sql を実行したか確認してください。`,
       );
       return;
     }
@@ -155,7 +182,7 @@ export default function CircleForm({
     } catch (imageFailed) {
       setSubmitting(false);
       setError(
-        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} サークルは保存されています。`,
+        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 団体は保存されています。`,
       );
       router.replace(`/circles/${circleId}`);
       router.refresh();
@@ -170,7 +197,7 @@ export default function CircleForm({
   return (
     <main className="px-4 py-6">
       <h1 className="mb-4 text-lg font-bold">
-        {isEdit ? "サークルを編集" : "サークル・教室を登録"}
+        {isEdit ? "団体を編集" : "団体を登録"}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm">
@@ -184,6 +211,25 @@ export default function CircleForm({
         </label>
 
         <label className="block text-sm">
+          種類
+          <select
+            required
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className={`${inputClass} mt-1`}
+          >
+            {orgKindOptions(kind).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="-mt-2 text-xs text-zinc-500">
+          建物としての会場は会場に登録します。財団やアートセンターなどは「その他」で問題ありません。
+        </p>
+
+        <label className="block text-sm">
           活動場所（任意）
           <input
             value={address}
@@ -194,7 +240,7 @@ export default function CircleForm({
         </label>
 
         <label className="block text-sm">
-          地域
+          市
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
@@ -209,7 +255,7 @@ export default function CircleForm({
         </label>
 
         <label className="block text-sm">
-          ジャンル（任意）
+          活動ジャンル（任意）
           <input
             value={genre}
             onChange={(e) => setGenre(e.target.value)}
@@ -217,6 +263,64 @@ export default function CircleForm({
             className={`${inputClass} mt-1`}
           />
         </label>
+
+        <label className="block text-sm">
+          代表（任意）
+          <input
+            value={representative}
+            onChange={(e) => setRepresentative(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          電話（任意）
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          メール（任意）
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          HP（任意）
+          <input
+            type="url"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            placeholder="https://"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <fieldset className="space-y-3">
+          <legend className="text-sm">SNS（任意・URL）</legend>
+          {SNS_LINKS.map((item) => (
+            <label key={item.key} className="block text-sm">
+              {item.label}
+              <input
+                type="url"
+                value={sns[item.key]}
+                onChange={(e) =>
+                  setSns((current) => ({ ...current, [item.key]: e.target.value }))
+                }
+                placeholder="https://"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+          ))}
+        </fieldset>
 
         <label className="block text-sm">
           説明（任意）

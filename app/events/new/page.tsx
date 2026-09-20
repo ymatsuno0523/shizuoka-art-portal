@@ -1,13 +1,18 @@
 import EventForm from "@/app/components/EventForm";
 import { createSupabaseClient } from "@/lib/supabase";
-import type { VenueOption } from "@/lib/event-form";
+import type { OrgOption, VenueOption } from "@/lib/event-form";
 
 export default async function NewEventPage() {
   const supabase = createSupabaseClient();
-  const { data } = await supabase
-    .from("venues")
-    .select("id, name, region")
-    .order("name");
+  const [{ data: venues }, { data: orgs }] = await Promise.all([
+    supabase.from("venues").select("id, name, region").order("name"),
+    supabase.from("circles").select("id, name, kind").order("name"),
+  ]);
 
-  return <EventForm venues={(data ?? []) as VenueOption[]} />;
+  return (
+    <EventForm
+      venues={(venues ?? []) as VenueOption[]}
+      orgs={(orgs ?? []) as OrgOption[]}
+    />
+  );
 }

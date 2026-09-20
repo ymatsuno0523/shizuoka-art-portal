@@ -1,7 +1,14 @@
 import Link from "next/link";
-import PlacesMap from "@/app/components/PlacesMap";
+import FilterSheet from "@/app/components/FilterSheet";
+import VenueBrowse from "@/app/components/VenueBrowse";
 import ViewSwitcher from "@/app/components/ViewSwitcher";
-import { pinFromRegion } from "@/lib/geo";
+import { REGIONS } from "@/lib/event-form";
+import {
+  joinFilters,
+  matchesFilter,
+  parseFilterValues,
+  type SearchParamValue,
+} from "@/lib/search-filters";
 import { getVenues } from "@/lib/venues";
 
 const VENUE_VIEWS = [
@@ -12,10 +19,16 @@ const VENUE_VIEWS = [
 export default async function VenuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; region?: SearchParamValue; saved?: string }>;
 }) {
-  const { view: viewParam } = await searchParams;
+  const { view: viewParam, region: regionParam, saved: savedParam } = await searchParams;
   const view = viewParam === "map" ? "map" : "list";
+  const regions = parseFilterValues(regionParam, REGIONS);
+  const saved = savedParam === "1";
+  const filterParams = {
+    region: joinFilters(regions, REGIONS),
+    saved: saved ? "1" : undefined,
+  };
   const { venues, error } = await getVenues();
 
   if (error) {
@@ -27,13 +40,7 @@ export default async function VenuesPage({
     );
   }
 
-  const pins = venues.map((venue) =>
-    pinFromRegion(venue.id, venue.region, {
-      title: venue.name,
-      href: `/venues/${venue.id}`,
-      subtitle: [venue.region, venue.address].filter(Boolean).join(" · "),
-    }),
-  );
+  const filtered = venues.filter((venue) => matchesFilter(venue.region, regions));
 
   return (
     <main className="px-4 py-6">
@@ -46,41 +53,26 @@ export default async function VenuesPage({
           登録する
         </Link>
       </div>
-      <ViewSwitcher basePath="/venues" views={[...VENUE_VIEWS]} current={view} />
-
-      {view === "map" ? (
-        <PlacesMap pins={pins} />
-      ) : venues.length === 0 ? (
-        <p className="text-sm text-zinc-500">まだ会場がありません。</p>
-      ) : (
-        <ul className="space-y-3">
-          {venues.map((venue) => (
-            <li key={venue.id}>
-              <Link
-                href={`/venues/${venue.id}`}
-                className="flex rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-              >
-                {venue.imageUrls[0] ? (
-                  <img
-                    src={venue.imageUrls[0]}
-                    alt=""
-                    className="h-24 w-24 shrink-0 rounded-[6px] object-cover"
-                  />
-                ) : (
-                  <div className="h-24 w-24 shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
-                )}
-                <div className="min-w-0 flex-1 px-3 py-2">
-                  <p className="font-semibold">{venue.name}</p>
-                  <p className="mt-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
-                    {venue.region}
-                    {venue.address ? ` · ${venue.address}` : ""}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ViewSwitcher
+        basePath="/venues"
+        views={[...VENUE_VIEWS]}
+        current={view}
+        params={filterParams}
+      />
+      <FilterSheet
+        path="/venues"
+        view={view}
+        groups={[
+          { key: "region", label: "地域", values: regions, options: REGIONS, areas: true },
+        ]}
+        toggles={[{ key: "saved", label: "保存した", checked: saved }]}
+      />
+      <VenueBrowse
+        view={view}
+        venues={filtered}
+        emptyAll={venues.length === 0}
+        saved={saved}
+      />
     </main>
   );
 }

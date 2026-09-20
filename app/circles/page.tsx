@@ -1,14 +1,34 @@
 import Link from "next/link";
-import { getCircles } from "@/lib/circles";
+import CircleBrowse from "@/app/components/CircleBrowse";
+import FilterSheet from "@/app/components/FilterSheet";
+import { getCircles, ORG_KINDS } from "@/lib/circles";
+import { REGIONS } from "@/lib/event-form";
+import {
+  matchesFilter,
+  parseFilterValues,
+  type SearchParamValue,
+} from "@/lib/search-filters";
 
-export default async function CirclesPage() {
+export default async function CirclesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    region?: SearchParamValue;
+    kind?: SearchParamValue;
+    saved?: string;
+  }>;
+}) {
+  const { region: regionParam, kind: kindParam, saved: savedParam } = await searchParams;
+  const regions = parseFilterValues(regionParam, REGIONS);
+  const kinds = parseFilterValues(kindParam, ORG_KINDS);
+  const saved = savedParam === "1";
   const { circles, error } = await getCircles();
 
   if (error) {
     return (
       <main className="px-4 py-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-lg font-bold">サークル・教室</h1>
+          <h1 className="text-lg font-bold">団体</h1>
           <Link
             href="/circles/new"
             className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -24,10 +44,16 @@ export default async function CirclesPage() {
     );
   }
 
+  const filtered = circles.filter((circle) => {
+    if (!matchesFilter(circle.region, regions)) return false;
+    if (!matchesFilter(circle.kind, kinds)) return false;
+    return true;
+  });
+
   return (
     <main className="px-4 py-6">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-lg font-bold">サークル・教室</h1>
+        <h1 className="text-lg font-bold">団体</h1>
         <Link
           href="/circles/new"
           className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -35,38 +61,15 @@ export default async function CirclesPage() {
           登録する
         </Link>
       </div>
-      {circles.length === 0 ? (
-        <p className="text-sm text-zinc-500">まだサークルがありません。</p>
-      ) : (
-        <ul className="space-y-3">
-          {circles.map((circle) => (
-            <li key={circle.id}>
-              <Link
-                href={`/circles/${circle.id}`}
-                className="flex rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-              >
-                {circle.images[0] ? (
-                  <img
-                    src={circle.images[0].url}
-                    alt=""
-                    className="h-24 w-24 shrink-0 rounded-[6px] object-cover"
-                  />
-                ) : (
-                  <div className="h-24 w-24 shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
-                )}
-                <div className="min-w-0 flex-1 px-3 py-2">
-                  <p className="font-semibold">{circle.name}</p>
-                  <p className="mt-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
-                    {circle.region}
-                    {circle.genre ? ` · ${circle.genre}` : ""}
-                    {circle.address ? ` · ${circle.address}` : ""}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <FilterSheet
+        path="/circles"
+        groups={[
+          { key: "region", label: "地域", values: regions, options: REGIONS, areas: true },
+          { key: "kind", label: "種類", values: kinds, options: ORG_KINDS },
+        ]}
+        toggles={[{ key: "saved", label: "保存した", checked: saved }]}
+      />
+      <CircleBrowse circles={filtered} emptyAll={circles.length === 0} saved={saved} />
     </main>
   );
 }
