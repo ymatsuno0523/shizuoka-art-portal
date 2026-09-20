@@ -5,30 +5,50 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import type { EventImage, EventRow } from "@/lib/events";
 import {
   fromDatetimeLocalValue,
-  REGIONS,
+  toDatetimeLocalValue,
   type VenueOption,
 } from "@/lib/event-form";
+import { initialPlaceMode, regionOptions } from "@/lib/event-payload";
+import {
+  compressImageFile,
+  MAX_EVENT_IMAGES,
+  storagePathFromPublicUrl,
+} from "@/lib/images";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-background px-3 py-2 text-sm dark:border-zinc-700";
 
-export default function EventForm({ venues }: { venues: VenueOption[] }) {
+export default function EventForm({
+  venues,
+  event,
+}: {
+  venues: VenueOption[];
+  event?: EventRow & { images?: EventImage[] };
+}) {
+  const isEdit = Boolean(event);
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [placeMode, setPlaceMode] = useState<"venue" | "text">(
-    venues.length > 0 ? "venue" : "text",
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [description, setDescription] = useState(event?.description ?? "");
+  const [startAt, setStartAt] = useState(
+    event?.start_at ? toDatetimeLocalValue(event.start_at) : "",
   );
-  const [venueId, setVenueId] = useState(venues[0]?.id ?? "");
-  const [locationText, setLocationText] = useState("");
-  const [region, setRegion] = useState(venues[0]?.region || REGIONS[0]);
-  const [genre, setGenre] = useState("");
-  const [medium, setMedium] = useState("");
+  const [endAt, setEndAt] = useState(
+    event?.end_at ? toDatetimeLocalValue(event.end_at) : "",
+  );
+  const [placeMode, setPlaceMode] = useState<"venue" | "text">(
+    initialPlaceMode(event, venues),
+  );
+  const [venueId, setVenueId] = useState(event?.venue_id ?? venues[0]?.id ?? "");
+  const [locationText, setLocationText] = useState(event?.location_text ?? "");
+  const [region, setRegion] = useState(event?.region || venues[0]?.region || regionOptions()[0]);
+  const [genre, setGenre] = useState(event?.genre ?? "");
+  const [medium, setMedium] = useState(event?.medium ?? "");
+  const [keptImages, setKeptImages] = useState<EventImage[]>(event?.images ?? []);
+  const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,14 +61,17 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
   }
 
   if (!user) {
+    const next = isEdit && event ? `/events/${event.id}/edit` : "/events/new";
     return (
       <main className="px-4 py-6">
-        <h1 className="mb-3 text-lg font-bold">イベントを投稿</h1>
+        <h1 className="mb-3 text-lg font-bold">
+          {isEdit ? "イベントを編集" : "イベントを投稿"}
+        </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          投稿するにはログインが必要です。
+          {isEdit ? "編集" : "投稿"}するにはログインが必要です。
         </p>
         <Link
-          href="/mypage?next=/events/new"
+          href={`/mypage?next=${encodeURIComponent(next)}`}
           className="mt-4 inline-block rounded-xl bg-zinc-900 px-4 py-2.5 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
         >
           ログインへ
@@ -57,8 +80,19 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
     );
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  if (isEdit && event?.created_by && event.created_by !== user.id) {
+    return (
+      <main className="px-4 py-6">
+        <p className="text-sm text-zinc-600">このイベントを編集する権限がありません。</p>
+        <Link href={`/events/${event.id}`} className="mt-3 inline-block text-sm text-zinc-500">
+          詳細へ戻る
+        </Link>
+      </main>
+    );
+  }
+
+  async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
     if (!user) return;
     setError(null);
 
@@ -77,45 +111,94 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
       return;
     }
 
-    setSubmitting(true);
-    const supabase = createBrowserSupabase();
-    const { data, error: insertError } = await supabase
-      .from("events")
-      .insert({
-        title: title.trim(),
-        description: description.trim() || null,
-        start_at: fromDatetimeLocalValue(startAt),
-        end_at: endAt ? fromDatetimeLocalValue(endAt) : null,
-        venue_id: placeMode === "venue" ? venueId : null,
-        location_text: placeMode === "text" ? locationText.trim() : null,
-        region,
-        genre: genre.trim() || null,
-        medium: medium.trim() || null,
-        created_by: user.id,
-        created_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+    const payload = {
+      title: title.trim(),
+      description: description.trim() || null,
+      start_at: fromDatetimeLocalValue(startAt),
+      end_at: endAt ? fromDatetimeLocalValue(endAt) : null,
+      venue_id: placeMode === "venue" ? venueId : null,
+      location_text: placeMode === "text" ? locationText.trim() : null,
+      region,
+      genre: genre.trim() || null,
+      medium: medium.trim() || null,
+    };
 
-    setSubmitting(false);
-
-    if (insertError) {
-      const rlsHint =
-        insertError.code === "42501" ||
-        /row-level security|permission denied|RLS/i.test(insertError.message)
-          ? " RLS で INSERT が拒否されている場合があります。supabase/events-write-policy.sql を確認してください。"
-          : "";
-      setError(`${insertError.message}${rlsHint}`);
+    if (keptImages.length + files.length > MAX_EVENT_IMAGES) {
+      setError(`画像は${MAX_EVENT_IMAGES}枚までです。`);
       return;
     }
 
-    router.push(`/events/${data.id}`);
+    setSubmitting(true);
+    const supabase = createBrowserSupabase();
+    const result = isEdit && event
+      ? await supabase.from("events").update(payload).eq("id", event.id).select("id").single()
+      : await supabase
+          .from("events")
+          .insert({
+            ...payload,
+            created_by: user.id,
+            created_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+    if (result.error || !result.data) {
+      setSubmitting(false);
+      setError(result.error?.message ?? "保存に失敗しました。");
+      return;
+    }
+
+    const eventId = result.data.id;
+    const bucket = "event-images";
+
+    try {
+      const removed = (event?.images ?? []).filter(
+        (image) => !keptImages.some((kept) => kept.id === image.id),
+      );
+      for (const image of removed) {
+        const path = storagePathFromPublicUrl(image.url, bucket);
+        if (path) await supabase.storage.from(bucket).remove([path]);
+        await supabase.from("event_images").delete().eq("id", image.id);
+      }
+
+      let sortOrder = keptImages.length;
+      for (const file of files) {
+        const compressed = await compressImageFile(file);
+        const path = `${user.id}/${eventId}/${compressed.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, compressed, { contentType: "image/jpeg", upsert: false });
+        if (uploadError) throw uploadError;
+        const publicUrl = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+        const { error: imageError } = await supabase.from("event_images").insert({
+          event_id: eventId,
+          url: publicUrl,
+          sort_order: sortOrder,
+          created_by: user.id,
+        });
+        if (imageError) throw imageError;
+        sortOrder += 1;
+      }
+    } catch (imageFailed) {
+      setSubmitting(false);
+      setError(
+        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} supabase/event-images-storage.sql を実行したか確認してください。`,
+      );
+      router.replace(`/events/${eventId}`);
+      router.refresh();
+      return;
+    }
+
+    setSubmitting(false);
+    router.replace(`/events/${eventId}`);
     router.refresh();
   }
 
   return (
     <main className="px-4 py-6">
-      <h1 className="mb-4 text-lg font-bold">イベントを投稿</h1>
+      <h1 className="mb-4 text-lg font-bold">
+        {isEdit ? "イベントを編集" : "イベントを投稿"}
+      </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm">
           タイトル
@@ -214,7 +297,7 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
             onChange={(e) => setRegion(e.target.value)}
             className={`${inputClass} mt-1`}
           >
-            {REGIONS.map((item) => (
+            {regionOptions(region).map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>
@@ -242,6 +325,47 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
           />
         </label>
 
+        <div className="space-y-2 text-sm">
+          <p>画像（任意・最大{MAX_EVENT_IMAGES}枚。自動で圧縮します）</p>
+          {keptImages.length > 0 ? (
+            <ul className="flex gap-2 overflow-x-auto">
+              {keptImages.map((image) => (
+                <li key={image.id} className="relative shrink-0">
+                  <img
+                    src={image.url}
+                    alt=""
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setKeptImages((current) =>
+                        current.filter((item) => item.id !== image.id),
+                      )
+                    }
+                    className="absolute top-0.5 right-0.5 rounded bg-black/70 px-1 text-[10px] text-white"
+                  >
+                    削除
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className={inputClass}
+            onChange={(e) => {
+              const room = MAX_EVENT_IMAGES - keptImages.length;
+              setFiles(Array.from(e.target.files ?? []).slice(0, room));
+            }}
+          />
+          {files.length > 0 ? (
+            <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
+          ) : null}
+        </div>
+
         <label className="block text-sm">
           説明（任意）
           <textarea
@@ -259,7 +383,7 @@ export default function EventForm({ venues }: { venues: VenueOption[] }) {
           disabled={submitting}
           className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
         >
-          {submitting ? "投稿中..." : "投稿する"}
+          {submitting ? "保存中..." : isEdit ? "変更を保存" : "投稿する"}
         </button>
       </form>
     </main>

@@ -42,18 +42,29 @@ export default async function EventsPage() {
             <li key={event.id}>
               <Link
                 href={`/events/${event.id}`}
-                className="block rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"
+                className="flex rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
               >
-                <p className="text-xs text-zinc-500">
-                  {formatEventDate(event.start_at)}
-                </p>
-                <p className="mt-1 font-semibold">{event.title}</p>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  {event.placeLabel}
-                </p>
-                {event.genre ? (
-                  <p className="mt-2 text-xs text-zinc-500">{event.genre}</p>
-                ) : null}
+                {event.images[0] ? (
+                  <img
+                    src={event.images[0].url}
+                    alt=""
+                    className="h-24 w-24 shrink-0 rounded-[6px] object-cover"
+                  />
+                ) : (
+                  <div className="h-24 w-24 shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
+                )}
+                <div className="min-w-0 flex-1 px-3 py-2">
+                  <p className="text-xs text-zinc-500">
+                    {formatEventDate(event.start_at)}
+                  </p>
+                  <p className="mt-0.5 truncate font-semibold">{event.title}</p>
+                  <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
+                    {event.placeLabel}
+                  </p>
+                  {event.genre ? (
+                    <p className="mt-1 truncate text-xs text-zinc-500">{event.genre}</p>
+                  ) : null}
+                </div>
               </Link>
             </li>
           ))}

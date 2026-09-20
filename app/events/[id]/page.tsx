@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import BackLink from "@/app/components/BackLink";
+import ImageSlider from "@/app/components/ImageSlider";
+import OwnerEventEditLink from "@/app/components/OwnerEventEditLink";
 import { formatEventDate, getEvent } from "@/lib/events";
 
 export default async function EventDetailPage({
@@ -24,9 +26,9 @@ export default async function EventDetailPage({
 
   return (
     <main className="px-4 py-6">
-      <Link href="/events" className="text-sm text-zinc-500">
-        ← 一覧へ
-      </Link>
+      <div className="mt-4">
+        <ImageSlider urls={event.images.map((image) => image.url)} alt={event.title} />
+      </div>
       <p className="mt-4 text-xs text-zinc-500">
         {formatEventDate(event.start_at)}
         {event.end_at ? ` 〜 ${formatEventDate(event.end_at)}` : null}
@@ -47,6 +49,10 @@ export default async function EventDetailPage({
       ) : (
         <p className="mt-6 text-sm text-zinc-500">詳細文はまだありません。</p>
       )}
+      <OwnerEventEditLink eventId={event.id} createdBy={event.created_by} />
+      <div className="mt-8">
+        <BackLink href="/events">← 戻る</BackLink>
+      </div>
     </main>
   );
 }

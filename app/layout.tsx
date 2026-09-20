@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "しずおかアート",
+  title: "Shizuoka Art Portal",
   description: "静岡県内のアート・イラスト情報",
   robots: {
     index: false,

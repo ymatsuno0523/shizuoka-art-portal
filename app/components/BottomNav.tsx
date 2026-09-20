@@ -25,6 +25,7 @@ export default function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                replace
                 className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${
                   active
                     ? "font-semibold text-foreground"

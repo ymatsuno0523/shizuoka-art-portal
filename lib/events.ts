@@ -1,5 +1,11 @@
 import { createSupabaseClient } from "@/lib/supabase";
 
+export type EventImage = {
+  id: string;
+  url: string;
+  sort_order: number | null;
+};
+
 export type EventRow = {
   id: string;
   title: string;
@@ -11,13 +17,19 @@ export type EventRow = {
   region: string | null;
   genre: string | null;
   medium: string | null;
-  image_url: string | null;
   created_by?: string | null;
 };
 
 export type EventWithPlace = EventRow & {
   placeLabel: string;
+  images: EventImage[];
 };
+
+function sortedImages(images: EventImage[] | null) {
+  return [...(images ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  );
+}
 
 function placeLabel(
   event: Pick<EventRow, "venue_id" | "location_text" | "region">,
@@ -42,12 +54,12 @@ export async function getEvents() {
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("*, event_images(id, url, sort_order)")
     .order("start_at", { ascending: true });
 
   if (error) return { events: [] as EventWithPlace[], error };
 
-  const rows = (data ?? []) as EventRow[];
+  const rows = (data ?? []) as (EventRow & { event_images: EventImage[] | null })[];
   const names = await venueNamesById(
     [...new Set(rows.map((event) => event.venue_id).filter(Boolean))] as string[],
   );
@@ -56,6 +68,7 @@ export async function getEvents() {
     events: rows.map((event) => ({
       ...event,
       placeLabel: placeLabel(event, event.venue_id ? names[event.venue_id] : null),
+      images: sortedImages(event.event_images),
     })),
     error: null,
   };
@@ -65,20 +78,21 @@ export async function getEvent(id: string) {
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("*, event_images(id, url, sort_order)")
     .eq("id", id)
     .maybeSingle();
 
   if (error) return { event: null, error };
   if (!data) return { event: null, error: null };
 
-  const event = data as EventRow;
+  const event = data as EventRow & { event_images: EventImage[] | null };
   const names = await venueNamesById(event.venue_id ? [event.venue_id] : []);
 
   return {
     event: {
       ...event,
       placeLabel: placeLabel(event, event.venue_id ? names[event.venue_id] : null),
+      images: sortedImages(event.event_images),
     } satisfies EventWithPlace,
     error: null,
   };
