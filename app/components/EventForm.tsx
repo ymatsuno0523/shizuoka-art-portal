@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import PdfFields from "@/app/components/PdfFields";
 import type { EventImage, EventRow } from "@/lib/events";
 import {
   categoryOptions,
@@ -13,6 +14,12 @@ import {
   type VenueOption,
 } from "@/lib/event-form";
 import { initialOrgMode, initialPlaceMode, regionOptions } from "@/lib/event-payload";
+import {
+  MAX_ATTACHMENTS,
+  saveAttachments,
+  type Attachment,
+  type PendingAttachment,
+} from "@/lib/files";
 import {
   compressImageFile,
   MAX_EVENT_IMAGES,
@@ -29,7 +36,7 @@ export default function EventForm({
 }: {
   venues: VenueOption[];
   orgs: OrgOption[];
-  event?: EventRow & { images?: EventImage[] };
+  event?: EventRow & { images?: EventImage[]; files?: Attachment[] };
 }) {
   const isEdit = Boolean(event);
   const { user, loading } = useAuth();
@@ -66,6 +73,8 @@ export default function EventForm({
   const [parkingText, setParkingText] = useState(event?.parking_text ?? "");
   const [keptImages, setKeptImages] = useState<EventImage[]>(event?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
+  const [keptPdfs, setKeptPdfs] = useState<Attachment[]>(event?.files ?? []);
+  const [pendingPdfs, setPendingPdfs] = useState<PendingAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,7 +133,7 @@ export default function EventForm({
     }
 
     if (placeMode === "venue" && !venueId) {
-      setError("会場を選ぶか、手打ちに切り替えてください。");
+      setError("施設を選ぶか、手打ちに切り替えてください。");
       return;
     }
 
@@ -157,6 +166,11 @@ export default function EventForm({
 
     if (keptImages.length + files.length > MAX_EVENT_IMAGES) {
       setError(`画像は${MAX_EVENT_IMAGES}枚までです。`);
+      return;
+    }
+
+    if (keptPdfs.length + pendingPdfs.length > MAX_ATTACHMENTS) {
+      setError(`PDFは${MAX_ATTACHMENTS}件までです。`);
       return;
     }
 
@@ -215,6 +229,26 @@ export default function EventForm({
       setSubmitting(false);
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} supabase/event-images-storage.sql を実行したか確認してください。`,
+      );
+      router.replace(`/events/${eventId}`);
+      router.refresh();
+      return;
+    }
+
+    try {
+      await saveAttachments(supabase, {
+        table: "event_files",
+        idColumn: "event_id",
+        entityId: eventId,
+        userId: user.id,
+        original: event?.files ?? [],
+        kept: keptPdfs,
+        pending: pendingPdfs,
+      });
+    } catch (fileFailed) {
+      setSubmitting(false);
+      setError(
+        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
       router.replace(`/events/${eventId}`);
       router.refresh();
@@ -293,7 +327,7 @@ export default function EventForm({
               disabled={venues.length === 0}
               onChange={() => setPlaceMode("venue")}
             />
-            登録済み会場から選ぶ
+            登録済み施設から選ぶ
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -302,7 +336,7 @@ export default function EventForm({
               checked={placeMode === "text"}
               onChange={() => setPlaceMode("text")}
             />
-            手打ちする（会場には登録されない）
+            手打ちする（施設には登録されない）
           </label>
         </fieldset>
 
@@ -320,7 +354,7 @@ export default function EventForm({
               className={`${inputClass} mt-1`}
             >
               {venues.length === 0 ? (
-                <option value="">登録済み会場はまだありません</option>
+                <option value="">登録済み施設はまだありません</option>
               ) : (
                 venues.map((venue) => (
                   <option key={venue.id} value={venue.id}>
@@ -532,6 +566,13 @@ export default function EventForm({
             <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
           ) : null}
         </div>
+
+        <PdfFields
+          kept={keptPdfs}
+          pending={pendingPdfs}
+          onKeptChange={setKeptPdfs}
+          onPendingChange={setPendingPdfs}
+        />
 
         <label className="block text-sm">
           説明（任意）

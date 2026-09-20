@@ -1,6 +1,7 @@
 import type { EventRow } from "@/lib/events";
 import { REGIONS, type OrgOption, type VenueOption } from "@/lib/event-form";
 import { ORG_KINDS } from "@/lib/circles";
+import { VENUE_KINDS } from "@/lib/venues";
 
 export function initialPlaceMode(event: EventRow | undefined, venues: VenueOption[]) {
   if (event?.venue_id) return "venue" as const;
@@ -19,6 +20,13 @@ export function orgKindOptions(current?: string | null) {
     return [current, ...ORG_KINDS];
   }
   return [...ORG_KINDS];
+}
+
+export function venueKindOptions(current?: string | null) {
+  if (current && !VENUE_KINDS.includes(current as (typeof VENUE_KINDS)[number])) {
+    return [current, ...VENUE_KINDS];
+  }
+  return [...VENUE_KINDS];
 }
 
 export function regionOptions(current?: string | null) {

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/events", label: "イベント", icon: CalendarIcon },
-  { href: "/venues", label: "会場", icon: VenueIcon },
+  { href: "/venues", label: "施設", icon: VenueIcon },
   { href: "/circles", label: "団体", icon: CircleIcon },
   { href: "/mypage", label: "マイページ", icon: UserIcon },
 ] as const;

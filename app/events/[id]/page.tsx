@@ -6,6 +6,7 @@ import EventReactionBar from "@/app/components/EventReactionBar";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
 import OwnerEventEditLink from "@/app/components/OwnerEventEditLink";
+import PdfLinks from "@/app/components/PdfLinks";
 import { formatEventDateRange, getEvent } from "@/lib/events";
 
 export default async function EventDetailPage({
@@ -78,6 +79,7 @@ export default async function EventDetailPage({
         <InfoLink label="HP" href={event.website_url} />
         <InfoRow label="駐車場" value={event.parking_text} />
       </dl>
+      <PdfLinks files={event.files} />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/events">戻る</BackLink>

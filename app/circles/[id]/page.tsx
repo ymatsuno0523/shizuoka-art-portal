@@ -4,6 +4,7 @@ import CategoryChip from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow } from "@/app/components/InfoRow";
 import OwnerEditLink from "@/app/components/OwnerEditLink";
+import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
 import { getCircle } from "@/lib/circles";
@@ -76,6 +77,7 @@ export default async function CircleDetailPage({
           }}
         />
       </dl>
+      <PdfLinks files={circle.files} />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/circles">戻る</BackLink>

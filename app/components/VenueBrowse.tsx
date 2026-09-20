@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CategoryChip from "@/app/components/CategoryChip";
 import MineGate from "@/app/components/MineGate";
 import PlacesMap from "@/app/components/PlacesMap";
 import { pinFromRegion } from "@/lib/geo";
@@ -21,10 +22,10 @@ export default function VenueBrowse({
     <MineGate items={venues} kind="venue" saved={saved}>
       {(items) => {
         if (emptyAll) {
-          return <p className="text-sm text-zinc-500">まだ会場がありません。</p>;
+          return <p className="text-sm text-zinc-500">まだ施設がありません。</p>;
         }
         if (items.length === 0) {
-          return <p className="text-sm text-zinc-500">条件に合う会場がありません。</p>;
+          return <p className="text-sm text-zinc-500">条件に合う施設がありません。</p>;
         }
 
         const pins = items.map((venue) =>
@@ -54,11 +55,14 @@ export default function VenueBrowse({
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{venue.name}</p>
-                    {venue.region ? (
-                      <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                        {venue.region}
-                      </p>
-                    ) : null}
+                    <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                      {venue.region ? (
+                        <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                          {venue.region}
+                        </p>
+                      ) : null}
+                      <CategoryChip label={venue.kind} />
+                    </div>
                   </div>
                 </Link>
               </li>

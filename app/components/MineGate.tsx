@@ -14,6 +14,17 @@ const TABLES = {
   circle: { going: null, saved: "circle_saves", column: "circle_id" },
 } as const;
 
+function columnIds(data: unknown, column: string) {
+  if (!Array.isArray(data)) return new Set<string>();
+  const ids = new Set<string>();
+  for (const row of data) {
+    if (!row || typeof row !== "object") continue;
+    const value = (row as Record<string, unknown>)[column];
+    if (typeof value === "string") ids.add(value);
+  }
+  return ids;
+}
+
 export default function MineGate<T extends { id: string }>(
   props: {
     items: T[];
@@ -73,18 +84,14 @@ function MineGateInner<T extends { id: string }>({
       const [goingResult, saveResult] = await Promise.all([
         going && spec.going
           ? supabase.from(spec.going).select(spec.column).eq("user_id", uid)
-          : Promise.resolve({ data: [] as Record<string, string>[] | null }),
+          : Promise.resolve({ data: [] as unknown[] }),
         saved
           ? supabase.from(spec.saved).select(spec.column).eq("user_id", uid)
-          : Promise.resolve({ data: [] as Record<string, string>[] | null }),
+          : Promise.resolve({ data: [] as unknown[] }),
       ]);
       if (cancelled) return;
-      setGoingIds(
-        new Set((goingResult.data ?? []).map((row) => row[spec.column] as string)),
-      );
-      setSavedIds(
-        new Set((saveResult.data ?? []).map((row) => row[spec.column] as string)),
-      );
+      setGoingIds(columnIds(goingResult.data, spec.column));
+      setSavedIds(columnIds(saveResult.data, spec.column));
       setReady(true);
     }
 

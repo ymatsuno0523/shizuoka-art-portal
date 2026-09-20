@@ -7,6 +7,7 @@ import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { formatEventDate, type EventRow } from "@/lib/events";
 import { storagePathFromPublicUrl } from "@/lib/images";
+import { deleteStoredAttachments } from "@/lib/files";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-background px-3 py-2 text-sm dark:border-zinc-700";
@@ -226,6 +227,7 @@ export default function MyPageClient() {
   async function handleDelete(id: string) {
     if (!confirm("このイベントを削除しますか？")) return;
     const supabase = createBrowserSupabase();
+    await deleteStoredAttachments(supabase, "event_files", "event_id", id);
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) {
       setListError(error.message);
@@ -235,8 +237,9 @@ export default function MyPageClient() {
   }
 
   async function handleDeleteCircle(id: string) {
-    if (!confirm("この団体を削除しますか？画像も一緒に消えます。")) return;
+    if (!confirm("この団体を削除しますか？画像とPDFも一緒に消えます。")) return;
     const supabase = createBrowserSupabase();
+    await deleteStoredAttachments(supabase, "circle_files", "circle_id", id);
     const { data: images } = await supabase
       .from("circle_images")
       .select("url")
@@ -256,8 +259,9 @@ export default function MyPageClient() {
   }
 
   async function handleDeleteVenue(id: string) {
-    if (!confirm("この会場を削除しますか？画像も一緒に消えます。")) return;
+    if (!confirm("この施設を削除しますか？画像とPDFも一緒に消えます。")) return;
     const supabase = createBrowserSupabase();
+    await deleteStoredAttachments(supabase, "venue_files", "venue_id", id);
     const { data: images } = await supabase
       .from("venue_images")
       .select("url")
@@ -405,7 +409,7 @@ export default function MyPageClient() {
           {savedVenues.map((item) => (
             <li key={`venue-${item.id}`}>
               <Link href={`/venues/${item.id}`} className="block">
-                <p className="text-xs text-zinc-500">会場・施設</p>
+                <p className="text-xs text-zinc-500">施設</p>
                 <p className="mt-0.5 font-semibold">{item.name}</p>
               </Link>
             </li>
@@ -458,9 +462,9 @@ export default function MyPageClient() {
         </ul>
       )}
 
-      <h2 className="mt-8 mb-3 text-sm font-semibold">登録した会場</h2>
+      <h2 className="mt-8 mb-3 text-sm font-semibold">登録した施設</h2>
       {venues.length === 0 ? (
-        <p className="text-sm text-zinc-500">まだ会場がありません。</p>
+        <p className="text-sm text-zinc-500">まだ施設がありません。</p>
       ) : (
         <ul className="space-y-3">
           {venues.map((item) => (
@@ -535,7 +539,7 @@ export default function MyPageClient() {
           href="/venues/new"
           className="rounded-xl border border-zinc-300 py-2.5 text-center text-sm font-semibold dark:border-zinc-700"
         >
-          会場を登録
+          施設を登録
         </Link>
         <Link
           href="/circles/new"

@@ -1,4 +1,17 @@
 import { createSupabaseClient } from "@/lib/supabase";
+import { sortedAttachments, type Attachment } from "@/lib/files";
+
+export const VENUE_KINDS = [
+  "ギャラリー",
+  "レンタルギャラリー",
+  "美術館・博物館",
+  "画材・文具",
+  "スタジオ・工房",
+  "公共施設",
+  "その他",
+] as const;
+
+export type VenueKind = (typeof VENUE_KINDS)[number];
 
 export type VenueImage = {
   id: string;
@@ -12,6 +25,7 @@ export type VenueRow = {
   description?: string | null;
   address: string | null;
   region: string | null;
+  kind?: string | null;
   phone?: string | null;
   hours_text?: string | null;
   holiday_text?: string | null;
@@ -32,6 +46,7 @@ export type VenueRow = {
 
 export type VenueWithImages = VenueRow & {
   images: VenueImage[];
+  files: Attachment[];
 };
 
 function sortedImages(images: VenueImage[] | null) {
@@ -41,31 +56,56 @@ function sortedImages(images: VenueImage[] | null) {
 }
 
 const VENUE_LIST_COLUMNS =
+  "id, name, address, region, kind, created_by, venue_images(id, url, sort_order)";
+
+const VENUE_LIST_COLUMNS_FALLBACK =
   "id, name, address, region, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_DETAIL_COLUMNS =
+  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order), venue_files(id, url, label, sort_order)";
+
+const VENUE_DETAIL_COLUMNS_NO_FILES =
+  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order)";
+
+const VENUE_DETAIL_COLUMNS_FALLBACK =
   "id, name, description, address, region, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order)";
 
 function toVenue(
-  row: VenueRow & { venue_images: VenueImage[] | null },
+  row: VenueRow & {
+    venue_images: VenueImage[] | null;
+    venue_files?: Attachment[] | null;
+  },
 ): VenueWithImages {
   return {
     ...row,
     images: sortedImages(row.venue_images),
+    files: sortedAttachments(row.venue_files),
   };
 }
 
-export async function getVenues() {
+async function orderVenues(columns: string) {
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase
-    .from("venues")
-    .select(VENUE_LIST_COLUMNS)
-    .order("name");
+  const select = () => supabase.from("venues").select(columns);
+  let { data, error } = await select().order("updated_at", { ascending: false });
+  if (error) {
+    ({ data, error } = await select().order("created_at", { ascending: false }));
+  }
+  if (error) {
+    ({ data, error } = await select().order("name"));
+  }
+  return { data, error };
+}
+
+export async function getVenues() {
+  let { data, error } = await orderVenues(VENUE_LIST_COLUMNS);
+  if (error) {
+    ({ data, error } = await orderVenues(VENUE_LIST_COLUMNS_FALLBACK));
+  }
 
   if (error) return { venues: [] as VenueWithImages[], error };
 
   const venues = (
-    (data ?? []) as (VenueRow & { venue_images: VenueImage[] | null })[]
+    (data ?? []) as unknown as (VenueRow & { venue_images: VenueImage[] | null })[]
   ).map(toVenue);
 
   return { venues, error: null };
@@ -73,17 +113,36 @@ export async function getVenues() {
 
 export async function getVenue(id: string) {
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("venues")
     .select(VENUE_DETAIL_COLUMNS)
     .eq("id", id)
     .maybeSingle();
+  if (error) {
+    ({ data, error } = await supabase
+      .from("venues")
+      .select(VENUE_DETAIL_COLUMNS_NO_FILES)
+      .eq("id", id)
+      .maybeSingle());
+  }
+  if (error) {
+    ({ data, error } = await supabase
+      .from("venues")
+      .select(VENUE_DETAIL_COLUMNS_FALLBACK)
+      .eq("id", id)
+      .maybeSingle());
+  }
 
   if (error) return { venue: null, error };
   if (!data) return { venue: null, error: null };
 
   return {
-    venue: toVenue(data as VenueRow & { venue_images: VenueImage[] | null }),
+    venue: toVenue(
+      data as unknown as VenueRow & {
+        venue_images: VenueImage[] | null;
+        venue_files?: Attachment[] | null;
+      },
+    ),
     error: null,
   };
 }

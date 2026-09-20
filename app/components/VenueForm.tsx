@@ -5,8 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import PdfFields from "@/app/components/PdfFields";
 import { REGIONS } from "@/lib/event-form";
-import { regionOptions } from "@/lib/event-payload";
+import { regionOptions, venueKindOptions } from "@/lib/event-payload";
+import {
+  MAX_ATTACHMENTS,
+  saveAttachments,
+  type Attachment,
+  type PendingAttachment,
+} from "@/lib/files";
 import { SNS_LINKS } from "@/lib/sns";
 import type { VenueImage, VenueRow } from "@/lib/venues";
 import {
@@ -25,12 +32,13 @@ const emptyToNull = (value: string) => value.trim() || null;
 export default function VenueForm({
   venue,
 }: {
-  venue?: VenueRow & { images?: VenueImage[] };
+  venue?: VenueRow & { images?: VenueImage[]; files?: Attachment[] };
 }) {
   const isEdit = Boolean(venue);
   const { user, loading } = useAuth();
   const router = useRouter();
   const [name, setName] = useState(venue?.name ?? "");
+  const [kind, setKind] = useState(venue?.kind || "ギャラリー");
   const [description, setDescription] = useState(venue?.description ?? "");
   const [address, setAddress] = useState(venue?.address ?? "");
   const [region, setRegion] = useState(venue?.region || REGIONS[0]);
@@ -53,6 +61,8 @@ export default function VenueForm({
   });
   const [keptImages, setKeptImages] = useState<VenueImage[]>(venue?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
+  const [keptPdfs, setKeptPdfs] = useState<Attachment[]>(venue?.files ?? []);
+  const [pendingPdfs, setPendingPdfs] = useState<PendingAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +79,7 @@ export default function VenueForm({
     return (
       <main className="px-4 py-6">
         <h1 className="mb-3 text-lg font-bold">
-          {isEdit ? "会場を編集" : "会場・施設を登録"}
+          {isEdit ? "施設を編集" : "施設を登録"}
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           登録するにはログインが必要です。
@@ -87,7 +97,7 @@ export default function VenueForm({
   if (isEdit && venue?.created_by && venue.created_by !== user.id) {
     return (
       <main className="px-4 py-6">
-        <p className="text-sm text-zinc-600">この会場を編集する権限がありません。</p>
+        <p className="text-sm text-zinc-600">この施設を編集する権限がありません。</p>
         <Link href={`/venues/${venue.id}`} className="mt-3 inline-block text-sm text-zinc-500">
           詳細へ戻る
         </Link>
@@ -110,8 +120,14 @@ export default function VenueForm({
       return;
     }
 
+    if (keptPdfs.length + pendingPdfs.length > MAX_ATTACHMENTS) {
+      setError(`PDFは${MAX_ATTACHMENTS}件までです。`);
+      return;
+    }
+
     const payload = {
       name: name.trim(),
+      kind,
       description: emptyToNull(description),
       address: emptyToNull(address),
       region,
@@ -150,7 +166,7 @@ export default function VenueForm({
     if (result.error || !result.data) {
       setSubmitting(false);
       setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/venue-fields.sql を実行したか確認してください。`,
+        `${result.error?.message ?? "保存に失敗しました。"} supabase/venue-kinds.sql を実行したか確認してください。`,
       );
       return;
     }
@@ -188,7 +204,27 @@ export default function VenueForm({
     } catch (imageFailed) {
       setSubmitting(false);
       setError(
-        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 会場は保存されています。`,
+        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 施設は保存されています。`,
+      );
+      router.replace(`/venues/${venueId}`);
+      router.refresh();
+      return;
+    }
+
+    try {
+      await saveAttachments(supabase, {
+        table: "venue_files",
+        idColumn: "venue_id",
+        entityId: venueId,
+        userId: user.id,
+        original: venue?.files ?? [],
+        kept: keptPdfs,
+        pending: pendingPdfs,
+      });
+    } catch (fileFailed) {
+      setSubmitting(false);
+      setError(
+        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
       router.replace(`/venues/${venueId}`);
       router.refresh();
@@ -203,7 +239,7 @@ export default function VenueForm({
   return (
     <main className="px-4 py-6">
       <h1 className="mb-4 text-lg font-bold">
-        {isEdit ? "会場を編集" : "会場・施設を登録"}
+        {isEdit ? "施設を編集" : "施設を登録"}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm">
@@ -214,6 +250,22 @@ export default function VenueForm({
             onChange={(e) => setName(e.target.value)}
             className={`${inputClass} mt-1`}
           />
+        </label>
+
+        <label className="block text-sm">
+          種類
+          <select
+            required
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className={`${inputClass} mt-1`}
+          >
+            {venueKindOptions(kind).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="block text-sm">
@@ -404,6 +456,13 @@ export default function VenueForm({
             <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
           ) : null}
         </div>
+
+        <PdfFields
+          kept={keptPdfs}
+          pending={pendingPdfs}
+          onKeptChange={setKeptPdfs}
+          onPendingChange={setPendingPdfs}
+        />
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 

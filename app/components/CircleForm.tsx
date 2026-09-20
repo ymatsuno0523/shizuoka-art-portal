@@ -5,9 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import PdfFields from "@/app/components/PdfFields";
 import type { CircleImage, CircleRow } from "@/lib/circles";
 import { REGIONS } from "@/lib/event-form";
 import { orgKindOptions, regionOptions } from "@/lib/event-payload";
+import {
+  MAX_ATTACHMENTS,
+  saveAttachments,
+  type Attachment,
+  type PendingAttachment,
+} from "@/lib/files";
 import { SNS_LINKS } from "@/lib/sns";
 import {
   compressImageFile,
@@ -25,7 +32,7 @@ const emptyToNull = (value: string) => value.trim() || null;
 export default function CircleForm({
   circle,
 }: {
-  circle?: CircleRow & { images?: CircleImage[] };
+  circle?: CircleRow & { images?: CircleImage[]; files?: Attachment[] };
 }) {
   const isEdit = Boolean(circle);
   const { user, loading } = useAuth();
@@ -50,6 +57,8 @@ export default function CircleForm({
   });
   const [keptImages, setKeptImages] = useState<CircleImage[]>(circle?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
+  const [keptPdfs, setKeptPdfs] = useState<Attachment[]>(circle?.files ?? []);
+  const [pendingPdfs, setPendingPdfs] = useState<PendingAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +113,11 @@ export default function CircleForm({
 
     if (keptImages.length + files.length > MAX_CIRCLE_IMAGES) {
       setError(`画像は${MAX_CIRCLE_IMAGES}枚までです。`);
+      return;
+    }
+
+    if (keptPdfs.length + pendingPdfs.length > MAX_ATTACHMENTS) {
+      setError(`PDFは${MAX_ATTACHMENTS}件までです。`);
       return;
     }
 
@@ -189,6 +203,26 @@ export default function CircleForm({
       return;
     }
 
+    try {
+      await saveAttachments(supabase, {
+        table: "circle_files",
+        idColumn: "circle_id",
+        entityId: circleId,
+        userId: user.id,
+        original: circle?.files ?? [],
+        kept: keptPdfs,
+        pending: pendingPdfs,
+      });
+    } catch (fileFailed) {
+      setSubmitting(false);
+      setError(
+        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
+      );
+      router.replace(`/circles/${circleId}`);
+      router.refresh();
+      return;
+    }
+
     setSubmitting(false);
     router.replace(`/circles/${circleId}`);
     router.refresh();
@@ -226,7 +260,7 @@ export default function CircleForm({
           </select>
         </label>
         <p className="-mt-2 text-xs text-zinc-500">
-          建物としての会場は会場に登録します。財団やアートセンターなどは「その他」で問題ありません。
+          建物としての場所は施設に登録します。財団やアートセンターなどは「その他」で問題ありません。
         </p>
 
         <label className="block text-sm">
@@ -372,6 +406,13 @@ export default function CircleForm({
             <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
           ) : null}
         </div>
+
+        <PdfFields
+          kept={keptPdfs}
+          pending={pendingPdfs}
+          onKeptChange={setKeptPdfs}
+          onPendingChange={setPendingPdfs}
+        />
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 

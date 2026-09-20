@@ -1,4 +1,5 @@
 import { createSupabaseClient } from "@/lib/supabase";
+import { sortedAttachments, type Attachment } from "@/lib/files";
 
 export type EventImage = {
   id: string;
@@ -34,6 +35,7 @@ export type EventWithPlace = EventRow & {
   placeLabel: string;
   organizerLabel: string | null;
   images: EventImage[];
+  files: Attachment[];
 };
 
 function sortedImages(images: EventImage[] | null) {
@@ -107,6 +109,7 @@ export async function getEvents() {
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),
       images: sortedImages(event.event_images),
+      files: [],
     })),
     error: null,
   };
@@ -114,16 +117,26 @@ export async function getEvents() {
 
 export async function getEvent(id: string) {
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("events")
-    .select("*, event_images(id, url, sort_order)")
+    .select("*, event_images(id, url, sort_order), event_files(id, url, label, sort_order)")
     .eq("id", id)
     .maybeSingle();
+  if (error) {
+    ({ data, error } = await supabase
+      .from("events")
+      .select("*, event_images(id, url, sort_order)")
+      .eq("id", id)
+      .maybeSingle());
+  }
 
   if (error) return { event: null, error };
   if (!data) return { event: null, error: null };
 
-  const event = data as EventRow & { event_images: EventImage[] | null };
+  const event = data as EventRow & {
+    event_images: EventImage[] | null;
+    event_files?: Attachment[] | null;
+  };
   const venues = await venuesById(event.venue_id ? [event.venue_id] : []);
   const circles = await circlesById(event.circle_id ? [event.circle_id] : []);
 
@@ -137,6 +150,7 @@ export async function getEvent(id: string) {
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),
       images: sortedImages(event.event_images),
+      files: sortedAttachments(event.event_files),
     } satisfies EventWithPlace,
     error: null,
   };

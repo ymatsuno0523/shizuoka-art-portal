@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
+import CategoryChip from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow } from "@/app/components/InfoRow";
 import OwnerEditLink from "@/app/components/OwnerEditLink";
+import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
 import { getVenue } from "@/lib/venues";
@@ -20,7 +22,7 @@ export default async function VenueDetailPage({
       <main className="px-4 py-6">
         <p className="text-sm text-red-600">読み込みに失敗しました: {error.message}</p>
         <p className="mt-2 text-xs text-zinc-500">
-          supabase/venue-fields.sql を実行していない場合があります。
+          supabase/venue-kinds.sql を実行していない場合があります。
         </p>
       </main>
     );
@@ -30,7 +32,8 @@ export default async function VenueDetailPage({
 
   return (
     <main className="px-4 py-6">
-      <h1 className="text-xl font-bold">{venue.name}</h1>
+      <CategoryChip label={venue.kind} />
+      <h1 className="mt-1 text-xl font-bold">{venue.name}</h1>
       <div className="mt-3">
         <SaveButton
           table="venue_saves"
@@ -55,6 +58,7 @@ export default async function VenueDetailPage({
 
       <h2 className="mt-8 text-sm font-semibold">案内</h2>
       <dl className="mt-1 divide-y divide-zinc-200 dark:divide-zinc-800">
+        <InfoRow label="種類" value={venue.kind} />
         <InfoRow label="住所" value={venue.address} />
         <InfoRow label="市" value={venue.region} />
         <InfoRow label="電話" value={venue.phone} />
@@ -77,6 +81,7 @@ export default async function VenueDetailPage({
           }}
         />
       </dl>
+      <PdfLinks files={venue.files} />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/venues">戻る</BackLink>
