@@ -1,7 +1,24 @@
 import Link from "next/link";
+import EventCalendar from "@/app/components/EventCalendar";
+import PlacesMap from "@/app/components/PlacesMap";
+import ViewSwitcher from "@/app/components/ViewSwitcher";
 import { formatEventDate, getEvents } from "@/lib/events";
+import { pinFromRegion } from "@/lib/geo";
 
-export default async function EventsPage() {
+const EVENT_VIEWS = [
+  { id: "list", label: "一覧" },
+  { id: "map", label: "マップ" },
+  { id: "calendar", label: "カレンダー" },
+] as const;
+
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view: viewParam } = await searchParams;
+  const view =
+    viewParam === "map" || viewParam === "calendar" ? viewParam : "list";
   const { events, error } = await getEvents();
 
   if (error) {
@@ -20,6 +37,14 @@ export default async function EventsPage() {
     );
   }
 
+  const pins = events.map((event) =>
+    pinFromRegion(event.id, event.region, {
+      title: event.title,
+      href: `/events/${event.id}`,
+      subtitle: `${formatEventDate(event.start_at)} · ${event.placeLabel}`,
+    }),
+  );
+
   return (
     <main className="px-4 py-6">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -31,7 +56,21 @@ export default async function EventsPage() {
           投稿する
         </Link>
       </div>
-      {events.length === 0 ? (
+      <ViewSwitcher basePath="/events" views={[...EVENT_VIEWS]} current={view} />
+
+      {view === "map" ? (
+        <PlacesMap pins={pins} />
+      ) : view === "calendar" ? (
+        <EventCalendar
+          events={events.map((event) => ({
+            id: event.id,
+            title: event.title,
+            start_at: event.start_at,
+            end_at: event.end_at,
+            placeLabel: event.placeLabel,
+          }))}
+        />
+      ) : events.length === 0 ? (
         <p className="text-sm text-zinc-500">
           まだイベントがありません。Supabase の events
           テーブルに1件追加すると、ここに表示されます。

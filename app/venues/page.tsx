@@ -1,7 +1,21 @@
 import Link from "next/link";
+import PlacesMap from "@/app/components/PlacesMap";
+import ViewSwitcher from "@/app/components/ViewSwitcher";
+import { pinFromRegion } from "@/lib/geo";
 import { getVenues } from "@/lib/venues";
 
-export default async function VenuesPage() {
+const VENUE_VIEWS = [
+  { id: "list", label: "一覧" },
+  { id: "map", label: "マップ" },
+] as const;
+
+export default async function VenuesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view: viewParam } = await searchParams;
+  const view = viewParam === "map" ? "map" : "list";
   const { venues, error } = await getVenues();
 
   if (error) {
@@ -12,6 +26,14 @@ export default async function VenuesPage() {
       </main>
     );
   }
+
+  const pins = venues.map((venue) =>
+    pinFromRegion(venue.id, venue.region, {
+      title: venue.name,
+      href: `/venues/${venue.id}`,
+      subtitle: [venue.region, venue.address].filter(Boolean).join(" · "),
+    }),
+  );
 
   return (
     <main className="px-4 py-6">
@@ -24,7 +46,11 @@ export default async function VenuesPage() {
           登録する
         </Link>
       </div>
-      {venues.length === 0 ? (
+      <ViewSwitcher basePath="/venues" views={[...VENUE_VIEWS]} current={view} />
+
+      {view === "map" ? (
+        <PlacesMap pins={pins} />
+      ) : venues.length === 0 ? (
         <p className="text-sm text-zinc-500">まだ会場がありません。</p>
       ) : (
         <ul className="space-y-3">

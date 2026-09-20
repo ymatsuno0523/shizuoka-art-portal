@@ -41,13 +41,15 @@ function placeLabel(
   return "場所未設定";
 }
 
-async function venueNamesById(ids: string[]) {
-  if (ids.length === 0) return {} as Record<string, string>;
+async function venuesById(ids: string[]) {
+  if (ids.length === 0) return {} as Record<string, { name: string; region: string | null }>;
 
   const supabase = createSupabaseClient();
-  const { data } = await supabase.from("venues").select("id, name").in("id", ids);
+  const { data } = await supabase.from("venues").select("id, name, region").in("id", ids);
 
-  return Object.fromEntries((data ?? []).map((venue) => [venue.id, venue.name]));
+  return Object.fromEntries(
+    (data ?? []).map((venue) => [venue.id, { name: venue.name, region: venue.region }]),
+  );
 }
 
 export async function getEvents() {
@@ -60,14 +62,15 @@ export async function getEvents() {
   if (error) return { events: [] as EventWithPlace[], error };
 
   const rows = (data ?? []) as (EventRow & { event_images: EventImage[] | null })[];
-  const names = await venueNamesById(
+  const venues = await venuesById(
     [...new Set(rows.map((event) => event.venue_id).filter(Boolean))] as string[],
   );
 
   return {
     events: rows.map((event) => ({
       ...event,
-      placeLabel: placeLabel(event, event.venue_id ? names[event.venue_id] : null),
+      region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
+      placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
       images: sortedImages(event.event_images),
     })),
     error: null,
@@ -86,12 +89,13 @@ export async function getEvent(id: string) {
   if (!data) return { event: null, error: null };
 
   const event = data as EventRow & { event_images: EventImage[] | null };
-  const names = await venueNamesById(event.venue_id ? [event.venue_id] : []);
+  const venues = await venuesById(event.venue_id ? [event.venue_id] : []);
 
   return {
     event: {
       ...event,
-      placeLabel: placeLabel(event, event.venue_id ? names[event.venue_id] : null),
+      region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
+      placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
       images: sortedImages(event.event_images),
     } satisfies EventWithPlace,
     error: null,
