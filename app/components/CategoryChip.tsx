@@ -6,3 +6,19 @@ export default function CategoryChip({ label }: { label?: string | null }) {
     </span>
   );
 }
+
+export function CategoryChips({ labels }: { labels?: unknown }) {
+  const items = Array.isArray(labels)
+    ? labels.filter((item): item is string => typeof item === "string" && item.trim() !== "")
+    : typeof labels === "string" && labels.trim()
+      ? [labels.trim()]
+      : [];
+  if (items.length === 0) return null;
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-1">
+      {items.map((label) => (
+        <CategoryChip key={label} label={label} />
+      ))}
+    </span>
+  );
+}

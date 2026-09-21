@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import CategoryChip from "@/app/components/CategoryChip";
+import { CategoryChips } from "@/app/components/CategoryChip";
 import MineGate from "@/app/components/MineGate";
 import PlacesMap from "@/app/components/PlacesMap";
 import { pinFromRegion } from "@/lib/geo";
@@ -55,13 +55,13 @@ export default function VenueBrowse({
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{venue.name}</p>
-                    <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
                       {venue.region ? (
                         <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
                           {venue.region}
                         </p>
                       ) : null}
-                      <CategoryChip label={venue.kind} />
+                      <CategoryChips labels={venue.kind} />
                     </div>
                   </div>
                 </Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import CategoryChip from "@/app/components/CategoryChip";
+import { CategoryChips } from "@/app/components/CategoryChip";
 import EventCalendar from "@/app/components/EventCalendar";
 import MineGate from "@/app/components/MineGate";
 import PlacesMap from "@/app/components/PlacesMap";
@@ -93,13 +93,13 @@ export default function EventBrowse({
                       ) : null}
                     </div>
                     <p className="mt-0.5 truncate font-semibold">{event.title}</p>
-                    <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
                       {event.region ? (
                         <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
                           {event.region}
                         </p>
                       ) : null}
-                      <CategoryChip label={event.genre} />
+                      <CategoryChips labels={event.genre} />
                     </div>
                   </div>
                 </Link>

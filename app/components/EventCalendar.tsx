@@ -138,24 +138,22 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
               key={key}
               type="button"
               onClick={() => setSelectedKey(key)}
-              className={`mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-full text-sm ${
-                isSelected
+              className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm ${
+                isToday
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : isToday
-                    ? "ring-1 ring-zinc-400"
-                    : ""
+                  : ""
               }`}
             >
               {day}
-              <span
-                className={`mt-0.5 h-1 w-1 rounded-full ${
-                  hasEvents
-                    ? isSelected
+              {hasEvents ? (
+                <span
+                  className={`pointer-events-none absolute bottom-0 left-1/2 h-[6px] w-[6px] -translate-x-1/2 rounded-full ${
+                    isToday
                       ? "bg-white dark:bg-zinc-900"
                       : "bg-zinc-900 dark:bg-zinc-100"
-                    : "bg-transparent"
-                }`}
-              />
+                  }`}
+                />
+              ) : null}
             </button>
           );
         })}

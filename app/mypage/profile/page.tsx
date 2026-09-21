@@ -2,7 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import HistoryBack from "@/app/components/HistoryBack";
 import { useRouter } from "next/navigation";
+import { setNavMode } from "@/lib/tab-nav";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { compressImageFile, storagePathFromPublicUrl } from "@/lib/images";
@@ -121,15 +123,14 @@ export default function ProfileForm() {
     }
 
     setSubmitting(false);
-    router.push("/mypage");
+    setNavMode("replace");
+    router.replace("/mypage");
     router.refresh();
   }
 
   return (
     <main className="px-4 py-6">
-      <Link href="/mypage" className="text-sm text-zinc-500">
-        ← マイページ
-      </Link>
+      <HistoryBack href="/mypage">← マイページ</HistoryBack>
       <h1 className="mt-3 mb-4 text-lg font-bold">プロフィールを編集</h1>
       {loadError ? <p className="mb-3 text-sm text-red-600">{loadError}</p> : null}
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,3 +1,4 @@
+import { parseLabels, withUnknownLabels } from "@/lib/labels";
 import type { EventRow } from "@/lib/events";
 import { REGIONS, type OrgOption, type VenueOption } from "@/lib/event-form";
 import { ORG_KINDS } from "@/lib/circles";
@@ -15,18 +16,12 @@ export function initialOrgMode(event: EventRow | undefined, orgs: OrgOption[]) {
   return orgs.length > 0 ? ("org" as const) : ("text" as const);
 }
 
-export function orgKindOptions(current?: string | null) {
-  if (current && !ORG_KINDS.includes(current as (typeof ORG_KINDS)[number])) {
-    return [current, ...ORG_KINDS];
-  }
-  return [...ORG_KINDS];
+export function orgKindOptions(current?: unknown) {
+  return withUnknownLabels(ORG_KINDS, parseLabels(current));
 }
 
-export function venueKindOptions(current?: string | null) {
-  if (current && !VENUE_KINDS.includes(current as (typeof VENUE_KINDS)[number])) {
-    return [current, ...VENUE_KINDS];
-  }
-  return [...VENUE_KINDS];
+export function venueKindOptions(current?: unknown) {
+  return withUnknownLabels(VENUE_KINDS, parseLabels(current));
 }
 
 export function regionOptions(current?: string | null) {

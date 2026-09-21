@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import LabelChecks from "@/app/components/LabelChecks";
+import ImageFields from "@/app/components/ImageFields";
 import PdfFields from "@/app/components/PdfFields";
 import { REGIONS } from "@/lib/event-form";
 import { regionOptions, venueKindOptions } from "@/lib/event-payload";
+import { parseLabels } from "@/lib/labels";
 import {
   MAX_ATTACHMENTS,
   saveAttachments,
@@ -38,7 +41,9 @@ export default function VenueForm({
   const { user, loading } = useAuth();
   const router = useRouter();
   const [name, setName] = useState(venue?.name ?? "");
-  const [kind, setKind] = useState(venue?.kind || "ギャラリー");
+  const [kind, setKind] = useState(
+    parseLabels(venue?.kind).length > 0 ? parseLabels(venue?.kind) : ["ギャラリー"],
+  );
   const [description, setDescription] = useState(venue?.description ?? "");
   const [address, setAddress] = useState(venue?.address ?? "");
   const [region, setRegion] = useState(venue?.region || REGIONS[0]);
@@ -54,9 +59,6 @@ export default function VenueForm({
   const [sns, setSns] = useState({
     sns_instagram: venue?.sns_instagram ?? "",
     sns_x: venue?.sns_x ?? "",
-    sns_facebook: venue?.sns_facebook ?? "",
-    sns_youtube: venue?.sns_youtube ?? "",
-    sns_tiktok: venue?.sns_tiktok ?? "",
     sns_line: venue?.sns_line ?? "",
   });
   const [keptImages, setKeptImages] = useState<VenueImage[]>(venue?.images ?? []);
@@ -115,6 +117,11 @@ export default function VenueForm({
       return;
     }
 
+    if (kind.length === 0) {
+      setError("種類を1つ以上選んでください。");
+      return;
+    }
+
     if (keptImages.length + files.length > MAX_VENUE_IMAGES) {
       setError(`画像は${MAX_VENUE_IMAGES}枚までです。`);
       return;
@@ -142,9 +149,6 @@ export default function VenueForm({
       website_url: emptyToNull(websiteUrl),
       sns_instagram: emptyToNull(sns.sns_instagram),
       sns_x: emptyToNull(sns.sns_x),
-      sns_facebook: emptyToNull(sns.sns_facebook),
-      sns_youtube: emptyToNull(sns.sns_youtube),
-      sns_tiktok: emptyToNull(sns.sns_tiktok),
       sns_line: emptyToNull(sns.sns_line),
     };
 
@@ -166,7 +170,7 @@ export default function VenueForm({
     if (result.error || !result.data) {
       setSubmitting(false);
       setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/venue-kinds.sql を実行したか確認してください。`,
+        `${result.error?.message ?? "保存に失敗しました。"} supabase/multi-labels.sql を実行したか確認してください。`,
       );
       return;
     }
@@ -252,35 +256,29 @@ export default function VenueForm({
           />
         </label>
 
-        <label className="block text-sm">
-          種類
-          <select
-            required
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className={`${inputClass} mt-1`}
-          >
-            {venueKindOptions(kind).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
+        <LabelChecks
+          legend="種類"
+          options={venueKindOptions(kind)}
+          values={kind}
+          onChange={setKind}
+          hint="最大2つまで。その他のみ他は選べません。"
+        />
 
         <label className="block text-sm">
-          市
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className={`${inputClass} mt-1`}
-          >
-            {regionOptions(region).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          地域
+          <span className="select-field mt-1">
+            <select
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className={inputClass}
+            >
+              {regionOptions(region).map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </span>
         </label>
 
         <label className="block text-sm">
@@ -389,7 +387,7 @@ export default function VenueForm({
         </label>
 
         <fieldset className="space-y-3">
-          <legend className="text-sm">SNS（任意・URL）</legend>
+          <legend className="text-sm">SNS（任意）</legend>
           {SNS_LINKS.map((item) => (
             <label key={item.key} className="block text-sm">
               {item.label}
@@ -416,46 +414,13 @@ export default function VenueForm({
           />
         </label>
 
-        <div className="space-y-2 text-sm">
-          <p>画像（任意・最大{MAX_VENUE_IMAGES}枚。自動で圧縮します）</p>
-          {keptImages.length > 0 ? (
-            <ul className="flex gap-2 overflow-x-auto">
-              {keptImages.map((image) => (
-                <li key={image.id} className="relative shrink-0">
-                  <img
-                    src={image.url}
-                    alt=""
-                    className="h-20 w-20 rounded-lg object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setKeptImages((current) =>
-                        current.filter((item) => item.id !== image.id),
-                      )
-                    }
-                    className="absolute top-0.5 right-0.5 rounded bg-black/70 px-1 text-[10px] text-white"
-                  >
-                    削除
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className={inputClass}
-            onChange={(e) => {
-              const room = MAX_VENUE_IMAGES - keptImages.length;
-              setFiles(Array.from(e.target.files ?? []).slice(0, room));
-            }}
-          />
-          {files.length > 0 ? (
-            <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
-          ) : null}
-        </div>
+        <ImageFields
+          kept={keptImages}
+          files={files}
+          max={MAX_VENUE_IMAGES}
+          onKeptChange={setKeptImages}
+          onFilesChange={setFiles}
+        />
 
         <PdfFields
           kept={keptPdfs}

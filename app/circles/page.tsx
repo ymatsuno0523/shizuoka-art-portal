@@ -8,6 +8,7 @@ import {
   parseFilterValues,
   type SearchParamValue,
 } from "@/lib/search-filters";
+import { matchesAnyFilter } from "@/lib/labels";
 
 export default async function CirclesPage({
   searchParams,
@@ -26,8 +27,8 @@ export default async function CirclesPage({
 
   if (error) {
     return (
-      <main className="px-4 py-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <main className="px-4 pt-3 pb-6">
+        <div className="mb-2.5 flex items-center justify-between gap-3">
           <h1 className="text-lg font-bold">団体</h1>
           <Link
             href="/circles/new"
@@ -46,13 +47,13 @@ export default async function CirclesPage({
 
   const filtered = circles.filter((circle) => {
     if (!matchesFilter(circle.region, regions)) return false;
-    if (!matchesFilter(circle.kind, kinds)) return false;
+    if (!matchesAnyFilter(circle.kind, kinds)) return false;
     return true;
   });
 
   return (
-    <main className="px-4 py-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <main className="px-4 pt-3 pb-6">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold">団体</h1>
         <Link
           href="/circles/new"

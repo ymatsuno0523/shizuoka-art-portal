@@ -35,6 +35,70 @@ strong {
   font-weight: 700;
 }
 
+.choice-radio {
+  appearance: none;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  background: transparent;
+  display: grid;
+  place-content: center;
+  color: inherit;
+}
+
+.choice-radio::after {
+  content: "";
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 9999px;
+  background: currentColor;
+  transform: scale(0);
+}
+
+.choice-radio:checked::after {
+  transform: scale(1);
+}
+
+.choice-radio:disabled {
+  opacity: 0.35;
+}
+
+.choice-radio:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.select-field {
+  position: relative;
+  display: block;
+}
+
+.select-field > select {
+  appearance: none;
+  width: 100%;
+  padding-right: 2rem;
+  background-image: none;
+}
+
+.select-field > select::-ms-expand {
+  display: none;
+}
+
+.select-field::after {
+  content: "›";
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-56%) rotate(90deg);
+  color: #a1a1aa;
+  pointer-events: none;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
 .leaflet-container {
   height: 100%;
   width: 100%;
@@ -46,4 +110,8 @@ strong {
 .map-pin {
   background: none;
   border: none;
+}
+
+input[type="date"] {
+  min-width: 0;
 }

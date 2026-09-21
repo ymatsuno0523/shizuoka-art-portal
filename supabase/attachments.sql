@@ -116,13 +116,13 @@ values (
   'attachments',
   'attachments',
   true,
-  8388608,
+  1048576,
   array['application/pdf']
 )
 on conflict (id) do update
 set
   public = true,
-  file_size_limit = 8388608,
+  file_size_limit = 1048576,
   allowed_mime_types = array['application/pdf'];
 
 drop policy if exists "Public read attachments" on storage.objects;

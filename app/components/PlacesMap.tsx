@@ -17,11 +17,13 @@ export default function PlacesMap({ pins }: { pins: MapPin[] }) {
 
     let map: import("leaflet").Map | undefined;
     let cancelled = false;
+    let frame = 0;
+    let timer = 0;
 
     async function setup() {
       const leaflet = await import("leaflet");
       const L = leaflet.default;
-      if (cancelled || !node) return;
+      if (cancelled || !node.isConnected) return;
 
       map = L.map(node, { scrollWheelZoom: false }).setView(
         [SHIZUOKA_CENTER.lat, SHIZUOKA_CENTER.lng],
@@ -33,9 +35,9 @@ export default function PlacesMap({ pins }: { pins: MapPin[] }) {
 
       const pinIcon = L.divIcon({
         className: "map-pin",
-        iconSize: [24, 36],
-        iconAnchor: [12, 36],
-        html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36" aria-hidden="true"><path fill="#18181b" d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 24 12 24s12-15.6 12-24C24 5.4 18.6 0 12 0z"/><circle cx="12" cy="12" r="4.2" fill="#fff"/></svg>`,
+        iconSize: [24, 26],
+        iconAnchor: [12, 25],
+        html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="26" viewBox="0 0 24 26" aria-hidden="true"><path fill="#3f3f46" d="M12 1.2C6.4 1.2 2 5.6 2 11c0 4.8 6.2 10.4 8.6 12.6a2.4 2.4 0 0 0 2.8 0C15.8 21.4 22 15.8 22 11c0-5.4-4.4-9.8-10-9.8z"/><circle cx="12" cy="10.8" r="3.8" fill="#fff"/></svg>`,
       });
       const group = L.featureGroup();
       for (const pin of pins) {
@@ -47,14 +49,22 @@ export default function PlacesMap({ pins }: { pins: MapPin[] }) {
       if (pins.length > 0) {
         map.fitBounds(group.getBounds().pad(0.35), { maxZoom: 12 });
       }
-      requestAnimationFrame(() => map?.invalidateSize());
-      setTimeout(() => map?.invalidateSize(), 200);
+      const current = map;
+      frame = requestAnimationFrame(() => {
+        if (!cancelled) current.invalidateSize();
+      });
+      timer = window.setTimeout(() => {
+        if (!cancelled) current.invalidateSize();
+      }, 200);
     }
 
     void setup();
     return () => {
       cancelled = true;
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
       map?.remove();
+      map = undefined;
     };
   }, [pins]);
 
@@ -79,7 +89,7 @@ export default function PlacesMap({ pins }: { pins: MapPin[] }) {
         <div ref={containerRef} className="h-full min-h-[16rem] w-full" />
       </div>
       <p className="mt-2 text-[11px] text-zinc-500">
-        ピンをタップすると上が切り替わります。位置は市の目安です。
+        ピンをタップすると上が切り替わります。位置は地域の目安です。
       </p>
     </div>
   );

@@ -9,6 +9,7 @@ import {
   parseFilterValues,
   type SearchParamValue,
 } from "@/lib/search-filters";
+import { matchesAnyFilter } from "@/lib/labels";
 import { getVenues, VENUE_KINDS } from "@/lib/venues";
 
 const VENUE_VIEWS = [
@@ -45,8 +46,8 @@ export default async function VenuesPage({
 
   if (error) {
     return (
-      <main className="px-4 py-6">
-        <h1 className="mb-3 text-lg font-bold">施設</h1>
+      <main className="px-4 pt-3 pb-6">
+        <h1 className="mb-2.5 text-lg font-bold">施設</h1>
         <p className="text-sm text-red-600">読み込みに失敗しました: {error.message}</p>
       </main>
     );
@@ -54,13 +55,13 @@ export default async function VenuesPage({
 
   const filtered = venues.filter((venue) => {
     if (!matchesFilter(venue.region, regions)) return false;
-    if (!matchesFilter(venue.kind, kinds)) return false;
+    if (!matchesAnyFilter(venue.kind, kinds)) return false;
     return true;
   });
 
   return (
-    <main className="px-4 py-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <main className="px-4 pt-3 pb-6">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold">施設</h1>
         <Link
           href="/venues/new"

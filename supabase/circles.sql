@@ -20,9 +20,6 @@ alter table public.circles add column if not exists email text;
 alter table public.circles add column if not exists website_url text;
 alter table public.circles add column if not exists sns_instagram text;
 alter table public.circles add column if not exists sns_x text;
-alter table public.circles add column if not exists sns_facebook text;
-alter table public.circles add column if not exists sns_youtube text;
-alter table public.circles add column if not exists sns_tiktok text;
 alter table public.circles add column if not exists sns_line text;
 
 update public.circles set kind = '教室・スクール' where kind in ('スクール', '教室');

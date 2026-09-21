@@ -1,5 +1,6 @@
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
+import { parseLabels } from "@/lib/labels";
 
 export const VENUE_KINDS = [
   "ギャラリー",
@@ -25,7 +26,7 @@ export type VenueRow = {
   description?: string | null;
   address: string | null;
   region: string | null;
-  kind?: string | null;
+  kind?: string[];
   phone?: string | null;
   hours_text?: string | null;
   holiday_text?: string | null;
@@ -37,9 +38,6 @@ export type VenueRow = {
   website_url?: string | null;
   sns_instagram?: string | null;
   sns_x?: string | null;
-  sns_facebook?: string | null;
-  sns_youtube?: string | null;
-  sns_tiktok?: string | null;
   sns_line?: string | null;
   created_by?: string | null;
 };
@@ -62,13 +60,13 @@ const VENUE_LIST_COLUMNS_FALLBACK =
   "id, name, address, region, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_DETAIL_COLUMNS =
-  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order), venue_files(id, url, label, sort_order)";
+  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order), venue_files(id, url, label, sort_order)";
 
 const VENUE_DETAIL_COLUMNS_NO_FILES =
-  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order)";
+  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_DETAIL_COLUMNS_FALLBACK =
-  "id, name, description, address, region, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_facebook, sns_youtube, sns_tiktok, sns_line, created_by, venue_images(id, url, sort_order)";
+  "id, name, description, address, region, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order)";
 
 function toVenue(
   row: VenueRow & {
@@ -78,6 +76,7 @@ function toVenue(
 ): VenueWithImages {
   return {
     ...row,
+    kind: parseLabels(row.kind),
     images: sortedImages(row.venue_images),
     files: sortedAttachments(row.venue_files),
   };

@@ -13,7 +13,4 @@ alter table public.venues add column if not exists payment_text text;
 alter table public.venues add column if not exists website_url text;
 alter table public.venues add column if not exists sns_instagram text;
 alter table public.venues add column if not exists sns_x text;
-alter table public.venues add column if not exists sns_facebook text;
-alter table public.venues add column if not exists sns_youtube text;
-alter table public.venues add column if not exists sns_tiktok text;
 alter table public.venues add column if not exists sns_line text;

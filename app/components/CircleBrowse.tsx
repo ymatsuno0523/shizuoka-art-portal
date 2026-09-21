@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CategoryChips } from "@/app/components/CategoryChip";
 import MineGate from "@/app/components/MineGate";
 import type { CircleWithImages } from "@/lib/circles";
 
@@ -41,17 +42,13 @@ export default function CircleBrowse({
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{circle.name}</p>
-                    <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
                       {circle.region ? (
                         <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
                           {circle.region}
                         </p>
                       ) : null}
-                      {circle.kind ? (
-                        <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-zinc-100 px-2.5 text-[10px] font-semibold leading-none text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                          {circle.kind}
-                        </span>
-                      ) : null}
+                      <CategoryChips labels={circle.kind} />
                     </div>
                   </div>
                 </Link>

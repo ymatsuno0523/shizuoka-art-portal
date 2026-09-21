@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AuthProvider } from "@/app/components/AuthProvider";
 import BottomNav from "@/app/components/BottomNav";
 import Header from "@/app/components/Header";
+import TabNavManager from "@/app/components/TabNavManager";
 import "./globals.css";
 
 const notoSansJp = Noto_Sans_JP({
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Header />
             <div className="flex-1 pb-20">{children}</div>
             <Suspense fallback={<div className="h-16" />}>
+              <TabNavManager />
               <BottomNav />
             </Suspense>
           </div>

@@ -22,30 +22,6 @@ function XIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className={iconClass} fill="currentColor" aria-hidden>
-      <path d="M14.5 8.5V6.8c0-.8.5-1 1-1h1.7V3.2h-2.4c-2.6 0-4.3 1.6-4.3 4.1v1.2H8.3V11h2.2v9.8h3.1V11h2.3l.6-2.5z" />
-    </svg>
-  );
-}
-
-function YouTubeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className={iconClass} fill="currentColor" aria-hidden>
-      <path d="M21.6 7.2c-.2-1.1-1.1-1.9-2.2-2.1C17.6 4.8 12 4.8 12 4.8s-5.6 0-7.4.3c-1.1.2-2 1-2.2 2.1C2.1 9 2.1 12 2.1 12s0 3 .3 4.8c.2 1.1 1.1 1.9 2.2 2.1 1.8.3 7.4.3 7.4.3s5.6 0 7.4-.3c1.1-.2 2-1 2.2-2.1.3-1.8.3-4.8.3-4.8s0-3-.3-4.8zM10 15.2V8.8L15.6 12z" />
-    </svg>
-  );
-}
-
-function TikTokIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className={iconClass} fill="currentColor" aria-hidden>
-      <path d="M14.4 3.2h2.4c.2 2 1.5 3.6 3.5 4v2.4c-1.3 0-2.5-.4-3.5-1.1v6.4c0 3.3-2.7 6-6.1 5.9-3.3 0-6-2.8-5.9-6.2.1-3.2 2.8-5.8 6-5.8.4 0 .8 0 1.2.1v2.6c-.4-.2-.8-.2-1.2-.2-1.9 0-3.4 1.6-3.4 3.4S9.4 18 11.3 18s3.4-1.6 3.4-3.4z" />
-    </svg>
-  );
-}
-
 function LineIcon() {
   return (
     <svg viewBox="0 0 24 24" className={iconClass} fill="currentColor" aria-hidden>
@@ -57,9 +33,6 @@ function LineIcon() {
 const ICONS: Record<SnsKey, () => JSX.Element> = {
   sns_instagram: InstagramIcon,
   sns_x: XIcon,
-  sns_facebook: FacebookIcon,
-  sns_youtube: YouTubeIcon,
-  sns_tiktok: TikTokIcon,
   sns_line: LineIcon,
 };
 

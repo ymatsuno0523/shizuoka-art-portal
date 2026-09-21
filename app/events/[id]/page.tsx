@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
-import CategoryChip from "@/app/components/CategoryChip";
+import { CategoryChips } from "@/app/components/CategoryChip";
 import EventReactionBar from "@/app/components/EventReactionBar";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
@@ -35,7 +35,7 @@ export default async function EventDetailPage({
     <main className="px-4 py-6">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs text-zinc-500">{dateLabel}</p>
-        <CategoryChip label={event.genre} />
+        <CategoryChips labels={event.genre} />
       </div>
       <h1 className="mt-1 text-xl font-bold">{event.title}</h1>
       <EventReactionBar eventId={event.id} createdBy={event.created_by} />
@@ -53,13 +53,23 @@ export default async function EventDetailPage({
         <p className="mt-6 text-sm text-zinc-500">詳細文はまだありません。</p>
       )}
 
-      <h2 className="mt-8 text-sm font-semibold">案内</h2>
-      <dl className="mt-1 divide-y divide-zinc-200 dark:divide-zinc-800">
+      <dl className="mt-8 divide-y divide-zinc-200 dark:divide-zinc-800">
         <InfoRow label="開催日" value={dateLabel} />
         <InfoRow label="開催時間" value={event.time_text} />
         <InfoRow label="補足" value={event.schedule_note} />
-        <InfoRow label="会場" value={event.placeLabel} />
-        <InfoRow label="市" value={event.region} />
+        {event.venue_id ? (
+          <div className={infoGridClass}>
+            <dt className="text-zinc-500">会場</dt>
+            <dd>
+              <Link href={`/venues/${event.venue_id}`} className="underline">
+                {event.placeLabel}
+              </Link>
+            </dd>
+          </div>
+        ) : (
+          <InfoRow label="会場" value={event.placeLabel} />
+        )}
+        <InfoRow label="地域" value={event.region} />
         <InfoRow label="料金" value={event.fee_text} />
         {event.circle_id && event.organizerLabel ? (
           <div className={infoGridClass}>
@@ -78,8 +88,8 @@ export default async function EventDetailPage({
         <InfoRow label="メール" value={event.contact_email} />
         <InfoLink label="HP" href={event.website_url} />
         <InfoRow label="駐車場" value={event.parking_text} />
+        <PdfLinks files={event.files} />
       </dl>
-      <PdfLinks files={event.files} />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/events">戻る</BackLink>

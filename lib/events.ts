@@ -1,5 +1,6 @@
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
+import { parseLabels } from "@/lib/labels";
 
 export type EventImage = {
   id: string;
@@ -16,7 +17,7 @@ export type EventRow = {
   venue_id: string | null;
   location_text: string | null;
   region: string | null;
-  genre: string | null;
+  genre: string[];
   medium: string | null;
   circle_id?: string | null;
   time_text?: string | null;
@@ -102,6 +103,7 @@ export async function getEvents() {
   return {
     events: rows.map((event) => ({
       ...event,
+      genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
       placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
       organizerLabel: organizerLabel(
@@ -143,6 +145,7 @@ export async function getEvent(id: string) {
   return {
     event: {
       ...event,
+      genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
       placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
       organizerLabel: organizerLabel(

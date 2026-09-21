@@ -1,17 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  isEventsRootUrl,
+  isMainTabRoot,
+  isTabRootUrl,
+  mainTabFromPath,
+  setNavMode,
+  setPendingTab,
+  stackDeltaTo,
+  type MainTab,
+} from "@/lib/tab-nav";
 
 const items = [
-  { href: "/events", label: "イベント", icon: CalendarIcon },
-  { href: "/venues", label: "施設", icon: VenueIcon },
-  { href: "/circles", label: "団体", icon: CircleIcon },
-  { href: "/mypage", label: "マイページ", icon: UserIcon },
+  { href: "/events", tab: "events" as const, label: "イベント", icon: CalendarIcon },
+  { href: "/venues", tab: "venues" as const, label: "施設", icon: VenueIcon },
+  { href: "/circles", tab: "circles" as const, label: "団体", icon: CircleIcon },
+  { href: "/mypage", tab: "mypage" as const, label: "マイページ", icon: UserIcon },
 ] as const;
+
+function goDelta(delta: number) {
+  setNavMode("back");
+  window.history.go(-delta);
+}
+
+function openTab(
+  router: { push: (href: string) => void; replace: (href: string) => void },
+  pathname: string,
+  target: MainTab,
+  href: string,
+) {
+  const from = mainTabFromPath(pathname);
+  const fromRoot = isMainTabRoot(pathname);
+
+  if (from === target && fromRoot) return;
+
+  if (from === target) {
+    const delta = stackDeltaTo((url) => isTabRootUrl(url, target));
+    if (delta && delta > 0) goDelta(delta);
+    else {
+      setNavMode("replace");
+      router.replace(href);
+    }
+    return;
+  }
+
+  if (target === "events") {
+    const delta = stackDeltaTo(isEventsRootUrl);
+    if (delta && delta > 0) goDelta(delta);
+    else {
+      setNavMode("replace");
+      router.replace("/events");
+    }
+    return;
+  }
+
+  if (from === "events" && fromRoot) {
+    setNavMode("push");
+    router.push(href);
+    return;
+  }
+
+  if (fromRoot) {
+    setNavMode("replace");
+    router.replace(href);
+    return;
+  }
+
+  const delta = stackDeltaTo(isEventsRootUrl);
+  if (delta && delta > 0) {
+    setPendingTab(href);
+    goDelta(delta);
+    return;
+  }
+
+  setNavMode("replace");
+  router.replace(href);
+}
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-zinc-200 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-zinc-800">
@@ -25,12 +95,24 @@ export default function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                replace
                 className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${
                   active
                     ? "font-semibold text-foreground"
                     : "text-zinc-500 dark:text-zinc-400"
                 }`}
+                onClick={(event) => {
+                  if (
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey ||
+                    event.button !== 0
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  openTab(router, pathname, item.tab, item.href);
+                }}
               >
                 <Icon active={active} />
                 {item.label}

@@ -10,6 +10,7 @@ import {
   parseFilterValues,
   type SearchParamValue,
 } from "@/lib/search-filters";
+import { matchesAnyFilter } from "@/lib/labels";
 
 const EVENT_VIEWS = [
   { id: "list", label: "一覧" },
@@ -55,8 +56,8 @@ export default async function EventsPage({
 
   if (error) {
     return (
-      <main className="px-4 py-6">
-        <h1 className="mb-3 text-lg font-bold">イベント</h1>
+      <main className="px-4 pt-3 pb-6">
+        <h1 className="mb-2.5 text-lg font-bold">イベント</h1>
         <p className="text-sm text-red-600">
           読み込みに失敗しました: {error.message}
         </p>
@@ -71,14 +72,14 @@ export default async function EventsPage({
 
   const filtered = events.filter((event) => {
     if (!matchesFilter(event.region, regions)) return false;
-    if (!matchesFilter(event.genre, genres)) return false;
+    if (!matchesAnyFilter(event.genre, genres)) return false;
     if (!showPast && isPastEvent(event)) return false;
     return true;
   });
 
   return (
-    <main className="px-4 py-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <main className="px-4 pt-3 pb-6">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold">イベント</h1>
         <Link
           href="/events/new"

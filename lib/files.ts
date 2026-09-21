@@ -3,7 +3,8 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 export const MAX_ATTACHMENTS = 3;
 export const ATTACHMENT_BUCKET = "attachments";
-export const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+export const MAX_ATTACHMENT_MB = 1;
+export const MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
 export type Attachment = {
   id: string;
@@ -94,7 +95,7 @@ export async function saveAttachments(
   for (const item of pending) {
     if (!isPdfFile(item.file)) throw new Error("PDFのみアップロードできます。");
     if (item.file.size > MAX_ATTACHMENT_BYTES) {
-      throw new Error("PDFは8MBまでです。");
+      throw new Error(`PDFは${MAX_ATTACHMENT_MB}MBまでです。`);
     }
     const path = `${userId}/${folder}/${entityId}/${crypto.randomUUID()}.pdf`;
     const { error: uploadError } = await supabase.storage

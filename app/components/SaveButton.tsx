@@ -12,11 +12,24 @@ export const saveButtonClass = (active: boolean) =>
       : "border-zinc-300 dark:border-zinc-700"
   }`;
 
-export function BookmarkIcon({ filled }: { filled: boolean }) {
+export const compactSaveButtonClass = (active: boolean) =>
+  `inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none disabled:opacity-60 ${
+    active
+      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+      : "border-zinc-300 dark:border-zinc-700"
+  }`;
+
+export function BookmarkIcon({
+  filled,
+  className = "h-4 w-4",
+}: {
+  filled: boolean;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-4 w-4"
+      className={className}
       fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth={1.8}

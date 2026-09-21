@@ -71,7 +71,7 @@ export type VenueOption = {
 export type OrgOption = {
   id: string;
   name: string;
-  kind: string | null;
+  kind: string | string[] | null;
 };
 
 export function toDateInputValue(value: string) {

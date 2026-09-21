@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import LabelChecks from "@/app/components/LabelChecks";
+import ImageFields from "@/app/components/ImageFields";
 import PdfFields from "@/app/components/PdfFields";
 import type { CircleImage, CircleRow } from "@/lib/circles";
 import { REGIONS } from "@/lib/event-form";
 import { orgKindOptions, regionOptions } from "@/lib/event-payload";
+import { parseLabels } from "@/lib/labels";
 import {
   MAX_ATTACHMENTS,
   saveAttachments,
@@ -41,7 +44,9 @@ export default function CircleForm({
   const [description, setDescription] = useState(circle?.description ?? "");
   const [address, setAddress] = useState(circle?.address ?? "");
   const [region, setRegion] = useState(circle?.region || REGIONS[0]);
-  const [kind, setKind] = useState(circle?.kind || "サークル");
+  const [kind, setKind] = useState(
+    parseLabels(circle?.kind).length > 0 ? parseLabels(circle?.kind) : ["サークル"],
+  );
   const [genre, setGenre] = useState(circle?.genre ?? "");
   const [representative, setRepresentative] = useState(circle?.representative ?? "");
   const [phone, setPhone] = useState(circle?.phone ?? "");
@@ -50,9 +55,6 @@ export default function CircleForm({
   const [sns, setSns] = useState({
     sns_instagram: circle?.sns_instagram ?? "",
     sns_x: circle?.sns_x ?? "",
-    sns_facebook: circle?.sns_facebook ?? "",
-    sns_youtube: circle?.sns_youtube ?? "",
-    sns_tiktok: circle?.sns_tiktok ?? "",
     sns_line: circle?.sns_line ?? "",
   });
   const [keptImages, setKeptImages] = useState<CircleImage[]>(circle?.images ?? []);
@@ -111,6 +113,11 @@ export default function CircleForm({
       return;
     }
 
+    if (kind.length === 0) {
+      setError("種類を1つ以上選んでください。");
+      return;
+    }
+
     if (keptImages.length + files.length > MAX_CIRCLE_IMAGES) {
       setError(`画像は${MAX_CIRCLE_IMAGES}枚までです。`);
       return;
@@ -134,9 +141,6 @@ export default function CircleForm({
       website_url: emptyToNull(websiteUrl),
       sns_instagram: emptyToNull(sns.sns_instagram),
       sns_x: emptyToNull(sns.sns_x),
-      sns_facebook: emptyToNull(sns.sns_facebook),
-      sns_youtube: emptyToNull(sns.sns_youtube),
-      sns_tiktok: emptyToNull(sns.sns_tiktok),
       sns_line: emptyToNull(sns.sns_line),
     };
 
@@ -158,7 +162,7 @@ export default function CircleForm({
     if (result.error || !result.data) {
       setSubmitting(false);
       setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/circles-fields.sql を実行したか確認してください。`,
+        `${result.error?.message ?? "保存に失敗しました。"} supabase/multi-labels.sql を実行したか確認してください。`,
       );
       return;
     }
@@ -244,24 +248,13 @@ export default function CircleForm({
           />
         </label>
 
-        <label className="block text-sm">
-          種類
-          <select
-            required
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className={`${inputClass} mt-1`}
-          >
-            {orgKindOptions(kind).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="-mt-2 text-xs text-zinc-500">
-          建物としての場所は施設に登録します。財団やアートセンターなどは「その他」で問題ありません。
-        </p>
+        <LabelChecks
+          legend="種類"
+          options={orgKindOptions(kind)}
+          values={kind}
+          onChange={setKind}
+          hint="最大2つまで。その他のみ他は選べません。"
+        />
 
         <label className="block text-sm">
           活動場所（任意）
@@ -274,18 +267,20 @@ export default function CircleForm({
         </label>
 
         <label className="block text-sm">
-          市
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className={`${inputClass} mt-1`}
-          >
-            {regionOptions(region).map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          地域
+          <span className="select-field mt-1">
+            <select
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className={inputClass}
+            >
+              {regionOptions(region).map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </span>
         </label>
 
         <label className="block text-sm">
@@ -339,7 +334,7 @@ export default function CircleForm({
         </label>
 
         <fieldset className="space-y-3">
-          <legend className="text-sm">SNS（任意・URL）</legend>
+          <legend className="text-sm">SNS（任意）</legend>
           {SNS_LINKS.map((item) => (
             <label key={item.key} className="block text-sm">
               {item.label}
@@ -366,46 +361,13 @@ export default function CircleForm({
           />
         </label>
 
-        <div className="space-y-2 text-sm">
-          <p>画像（任意・最大{MAX_CIRCLE_IMAGES}枚。自動で圧縮します）</p>
-          {keptImages.length > 0 ? (
-            <ul className="flex gap-2 overflow-x-auto">
-              {keptImages.map((image) => (
-                <li key={image.id} className="relative shrink-0">
-                  <img
-                    src={image.url}
-                    alt=""
-                    className="h-20 w-20 rounded-lg object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setKeptImages((current) =>
-                        current.filter((item) => item.id !== image.id),
-                      )
-                    }
-                    className="absolute top-0.5 right-0.5 rounded bg-black/70 px-1 text-[10px] text-white"
-                  >
-                    削除
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className={inputClass}
-            onChange={(e) => {
-              const room = MAX_CIRCLE_IMAGES - keptImages.length;
-              setFiles(Array.from(e.target.files ?? []).slice(0, room));
-            }}
-          />
-          {files.length > 0 ? (
-            <p className="text-xs text-zinc-500">新規に{files.length}枚追加</p>
-          ) : null}
-        </div>
+        <ImageFields
+          kept={keptImages}
+          files={files}
+          max={MAX_CIRCLE_IMAGES}
+          onKeptChange={setKeptImages}
+          onFilesChange={setFiles}
+        />
 
         <PdfFields
           kept={keptPdfs}
