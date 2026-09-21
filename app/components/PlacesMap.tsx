@@ -23,9 +23,10 @@ export default function PlacesMap({ pins }: { pins: MapPin[] }) {
     async function setup() {
       const leaflet = await import("leaflet");
       const L = leaflet.default;
-      if (cancelled || !node.isConnected) return;
+      const el = containerRef.current;
+      if (cancelled || !el?.isConnected) return;
 
-      map = L.map(node, { scrollWheelZoom: false }).setView(
+      map = L.map(el, { scrollWheelZoom: false }).setView(
         [SHIZUOKA_CENTER.lat, SHIZUOKA_CENTER.lng],
         9,
       );
