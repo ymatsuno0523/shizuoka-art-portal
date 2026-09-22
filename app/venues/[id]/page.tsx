@@ -3,7 +3,7 @@ import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow } from "@/app/components/InfoRow";
-import OwnerEditLink from "@/app/components/OwnerEditLink";
+import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
@@ -82,7 +82,13 @@ export default async function VenueDetailPage({
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/venues">戻る</BackLink>
-        <OwnerEditLink href={`/venues/${venue.id}/edit`} createdBy={venue.created_by} />
+        <OwnerActions
+          kind="venue"
+          id={venue.id}
+          editHref={`/venues/${venue.id}/edit`}
+          createdBy={venue.created_by}
+          listHref="/venues"
+        />
       </div>
     </main>
   );

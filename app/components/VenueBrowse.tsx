@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import MineGate from "@/app/components/MineGate";
 import PlacesMap from "@/app/components/PlacesMap";
-import { pinFromRegion } from "@/lib/geo";
+import type { MapPinSource } from "@/lib/geo";
 import type { VenueWithImages } from "@/lib/venues";
 
 export default function VenueBrowse({
@@ -28,13 +28,16 @@ export default function VenueBrowse({
           return <p className="text-sm text-zinc-500">条件に合う施設がありません。</p>;
         }
 
-        const pins = items.map((venue) =>
-          pinFromRegion(venue.id, venue.region, {
-            title: venue.name,
-            href: `/venues/${venue.id}`,
-            subtitle: [venue.region, venue.address].filter(Boolean).join(" · "),
-          }),
-        );
+        const pins: MapPinSource[] = items.map((venue) => ({
+          id: venue.id,
+          title: venue.name,
+          href: `/venues/${venue.id}`,
+          subtitle: [venue.region, venue.address].filter(Boolean).join(" · "),
+          lat: venue.lat ?? null,
+          lng: venue.lng ?? null,
+          region: venue.region,
+          address: venue.address,
+        }));
         if (view === "map") return <PlacesMap pins={pins} />;
         return (
           <ul className="space-y-3">

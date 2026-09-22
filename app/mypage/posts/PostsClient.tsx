@@ -8,8 +8,7 @@ import ThumbCard, { firstImageUrl } from "@/app/components/ThumbCard";
 import { useAuth } from "@/app/components/AuthProvider";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { formatEventDateRange, isPastEvent } from "@/lib/events";
-import { storagePathFromPublicUrl } from "@/lib/images";
-import { deleteStoredAttachments } from "@/lib/files";
+import { deleteOwnedContent } from "@/lib/delete-content";
 import { parseLabels } from "@/lib/labels";
 import MypageSubpage from "@/app/mypage/MypageSubpage";
 import MypageTabs, { parseMypageTab, type MypageTab } from "@/app/mypage/MypageTabs";
@@ -147,11 +146,9 @@ export default function PostsClient() {
 
   async function handleDeleteEvent(id: string) {
     if (!confirm("このイベントを削除しますか？")) return;
-    const supabase = createBrowserSupabase();
-    await deleteStoredAttachments(supabase, "event_files", "event_id", id);
-    const { error: deleteError } = await supabase.from("events").delete().eq("id", id);
-    if (deleteError) {
-      setError(deleteError.message);
+    const result = await deleteOwnedContent("event", id);
+    if (result.error) {
+      setError(result.error);
       return;
     }
     setEvents((current) => current.filter((item) => item.id !== id));
@@ -159,21 +156,9 @@ export default function PostsClient() {
 
   async function handleDeleteVenue(id: string) {
     if (!confirm("この施設を削除しますか？画像とPDFも一緒に消えます。")) return;
-    const supabase = createBrowserSupabase();
-    await deleteStoredAttachments(supabase, "venue_files", "venue_id", id);
-    const { data: images } = await supabase
-      .from("venue_images")
-      .select("url")
-      .eq("venue_id", id);
-    const paths = (images ?? [])
-      .map((image) => storagePathFromPublicUrl(image.url, "venue-images"))
-      .filter((path): path is string => Boolean(path));
-    if (paths.length > 0) {
-      await supabase.storage.from("venue-images").remove(paths);
-    }
-    const { error: deleteError } = await supabase.from("venues").delete().eq("id", id);
-    if (deleteError) {
-      setError(deleteError.message);
+    const result = await deleteOwnedContent("venue", id);
+    if (result.error) {
+      setError(result.error);
       return;
     }
     setVenues((current) => current.filter((item) => item.id !== id));
@@ -181,21 +166,9 @@ export default function PostsClient() {
 
   async function handleDeleteCircle(id: string) {
     if (!confirm("この団体を削除しますか？画像とPDFも一緒に消えます。")) return;
-    const supabase = createBrowserSupabase();
-    await deleteStoredAttachments(supabase, "circle_files", "circle_id", id);
-    const { data: images } = await supabase
-      .from("circle_images")
-      .select("url")
-      .eq("circle_id", id);
-    const paths = (images ?? [])
-      .map((image) => storagePathFromPublicUrl(image.url, "circle-images"))
-      .filter((path): path is string => Boolean(path));
-    if (paths.length > 0) {
-      await supabase.storage.from("circle-images").remove(paths);
-    }
-    const { error: deleteError } = await supabase.from("circles").delete().eq("id", id);
-    if (deleteError) {
-      setError(deleteError.message);
+    const result = await deleteOwnedContent("circle", id);
+    if (result.error) {
+      setError(result.error);
       return;
     }
     setCircles((current) => current.filter((item) => item.id !== id));

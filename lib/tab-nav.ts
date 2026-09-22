@@ -67,6 +67,14 @@ export function setNavMode(mode: "push" | "replace" | "back") {
   sessionStorage.setItem(NAV_KEY, mode);
 }
 
+export function replaceAppHref(
+  router: { replace: (href: string) => void },
+  href: string,
+) {
+  setNavMode("replace");
+  router.replace(href);
+}
+
 function consumeNavMode() {
   const mode = sessionStorage.getItem(NAV_KEY);
   sessionStorage.removeItem(NAV_KEY);

@@ -3,7 +3,7 @@ import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow } from "@/app/components/InfoRow";
-import OwnerEditLink from "@/app/components/OwnerEditLink";
+import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
@@ -78,7 +78,13 @@ export default async function CircleDetailPage({
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/circles">戻る</BackLink>
-        <OwnerEditLink href={`/circles/${circle.id}/edit`} createdBy={circle.created_by} />
+        <OwnerActions
+          kind="circle"
+          id={circle.id}
+          editHref={`/circles/${circle.id}/edit`}
+          createdBy={circle.created_by}
+          listHref="/circles"
+        />
       </div>
     </main>
   );

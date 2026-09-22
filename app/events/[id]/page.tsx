@@ -5,7 +5,7 @@ import { CategoryChips } from "@/app/components/CategoryChip";
 import EventReactionBar from "@/app/components/EventReactionBar";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
-import OwnerEventEditLink from "@/app/components/OwnerEventEditLink";
+import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import { formatEventDateRange, getEvent } from "@/lib/events";
 
@@ -93,7 +93,13 @@ export default async function EventDetailPage({
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/events">戻る</BackLink>
-        <OwnerEventEditLink eventId={event.id} createdBy={event.created_by} />
+        <OwnerActions
+          kind="event"
+          id={event.id}
+          editHref={`/events/${event.id}/edit`}
+          createdBy={event.created_by}
+          listHref="/events"
+        />
       </div>
     </main>
   );

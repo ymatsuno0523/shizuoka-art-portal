@@ -1,3 +1,4 @@
+import { isMissingCoordColumn } from "@/lib/geo";
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
 import { parseLabels } from "@/lib/labels";
@@ -26,6 +27,8 @@ export type VenueRow = {
   description?: string | null;
   address: string | null;
   region: string | null;
+  lat?: number | null;
+  lng?: number | null;
   kind?: string[];
   phone?: string | null;
   hours_text?: string | null;
@@ -54,6 +57,9 @@ function sortedImages(images: VenueImage[] | null) {
 }
 
 const VENUE_LIST_COLUMNS =
+  "id, name, address, region, kind, lat, lng, created_by, venue_images(id, url, sort_order)";
+
+const VENUE_LIST_COLUMNS_NO_COORDS =
   "id, name, address, region, kind, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_LIST_COLUMNS_FALLBACK =
@@ -97,6 +103,9 @@ async function orderVenues(columns: string) {
 
 export async function getVenues() {
   let { data, error } = await orderVenues(VENUE_LIST_COLUMNS);
+  if (error && isMissingCoordColumn(error.message)) {
+    ({ data, error } = await orderVenues(VENUE_LIST_COLUMNS_NO_COORDS));
+  }
   if (error) {
     ({ data, error } = await orderVenues(VENUE_LIST_COLUMNS_FALLBACK));
   }

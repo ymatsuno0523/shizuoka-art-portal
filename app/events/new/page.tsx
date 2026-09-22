@@ -2,6 +2,8 @@ import EventForm from "@/app/components/EventForm";
 import { createSupabaseClient } from "@/lib/supabase";
 import type { OrgOption, VenueOption } from "@/lib/event-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewEventPage() {
   const supabase = createSupabaseClient();
   const [{ data: venues }, { data: orgs }] = await Promise.all([

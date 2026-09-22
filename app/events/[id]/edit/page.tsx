@@ -4,6 +4,8 @@ import { createSupabaseClient } from "@/lib/supabase";
 import type { OrgOption, VenueOption } from "@/lib/event-form";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditEventPage({
   params,
 }: {

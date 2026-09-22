@@ -17,6 +17,8 @@ export type EventRow = {
   venue_id: string | null;
   location_text: string | null;
   region: string | null;
+  lat?: number | null;
+  lng?: number | null;
   genre: string[];
   medium: string | null;
   circle_id?: string | null;
@@ -35,9 +37,35 @@ export type EventRow = {
 export type EventWithPlace = EventRow & {
   placeLabel: string;
   organizerLabel: string | null;
+  pinLat: number | null;
+  pinLng: number | null;
+  pinAddress: string | null;
   images: EventImage[];
   files: Attachment[];
 };
+
+type VenuePlace = {
+  name: string;
+  region: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+function pinFields(event: EventRow, venue?: VenuePlace) {
+  if (event.venue_id && venue) {
+    return {
+      pinLat: venue.lat,
+      pinLng: venue.lng,
+      pinAddress: venue.address,
+    };
+  }
+  return {
+    pinLat: event.lat ?? null,
+    pinLng: event.lng ?? null,
+    pinAddress: event.location_text,
+  };
+}
 
 function sortedImages(images: EventImage[] | null) {
   return [...(images ?? [])].sort(
@@ -64,13 +92,60 @@ function organizerLabel(
 }
 
 async function venuesById(ids: string[]) {
-  if (ids.length === 0) return {} as Record<string, { name: string; region: string | null }>;
+  if (ids.length === 0) return {} as Record<string, VenuePlace>;
 
   const supabase = createSupabaseClient();
-  const { data } = await supabase.from("venues").select("id, name, region").in("id", ids);
+  const full = await supabase
+    .from("venues")
+    .select("id, name, region, address, lat, lng")
+    .in("id", ids);
 
+  if (!full.error) {
+    return Object.fromEntries(
+      (full.data ?? []).map((venue) => [
+        venue.id,
+        {
+          name: venue.name,
+          region: venue.region,
+          address: venue.address,
+          lat: venue.lat,
+          lng: venue.lng,
+        } satisfies VenuePlace,
+      ]),
+    );
+  }
+
+  const addressOnly = await supabase
+    .from("venues")
+    .select("id, name, region, address")
+    .in("id", ids);
+  if (!addressOnly.error) {
+    return Object.fromEntries(
+      (addressOnly.data ?? []).map((venue) => [
+        venue.id,
+        {
+          name: venue.name,
+          region: venue.region,
+          address: venue.address,
+          lat: null,
+          lng: null,
+        } satisfies VenuePlace,
+      ]),
+    );
+  }
+
+  const basic = await supabase.from("venues").select("id, name, region").in("id", ids);
   return Object.fromEntries(
-    (data ?? []).map((venue) => [venue.id, { name: venue.name, region: venue.region }]),
+    (basic.data ?? []).map((venue) => [
+      venue.id,
+      {
+        name: venue.name,
+        region: venue.region,
+        address: null,
+        lat: null,
+        lng: null,
+      } satisfies VenuePlace,
+    ]),
   );
 }
 
@@ -106,6 +181,7 @@ export async function getEvents() {
       genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
       placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
+      ...pinFields(event, event.venue_id ? venues[event.venue_id] : undefined),
       organizerLabel: organizerLabel(
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,
@@ -148,6 +224,7 @@ export async function getEvent(id: string) {
       genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
       placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
+      ...pinFields(event, event.venue_id ? venues[event.venue_id] : undefined),
       organizerLabel: organizerLabel(
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,

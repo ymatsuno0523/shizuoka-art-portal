@@ -17,6 +17,8 @@ import {
   type Attachment,
   type PendingAttachment,
 } from "@/lib/files";
+import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { replaceAppHref } from "@/lib/tab-nav";
 import { SNS_LINKS } from "@/lib/sns";
 import type { VenueImage, VenueRow } from "@/lib/venues";
 import {
@@ -132,11 +134,15 @@ export default function VenueForm({
       return;
     }
 
+    setSubmitting(true);
+    const addressValue = emptyToNull(address);
+    const coords = await coordinatesFor(addressValue, region);
     const payload = {
       name: name.trim(),
       kind,
       description: emptyToNull(description),
-      address: emptyToNull(address),
+      address: addressValue,
+      ...coords,
       region,
       phone: emptyToNull(phone),
       hours_text: emptyToNull(hoursText),
@@ -152,20 +158,23 @@ export default function VenueForm({
       sns_line: emptyToNull(sns.sns_line),
     };
 
-    setSubmitting(true);
     const supabase = createBrowserSupabase();
-    const result =
+    const write = (body: typeof payload | ReturnType<typeof withoutCoords<typeof payload>>) =>
       isEdit && venue
-        ? await supabase.from("venues").update(payload).eq("id", venue.id).select("id").single()
-        : await supabase
+        ? supabase.from("venues").update(body).eq("id", venue.id).select("id").single()
+        : supabase
             .from("venues")
             .insert({
-              ...payload,
+              ...body,
               created_by: user.id,
               created_at: new Date().toISOString(),
             })
             .select("id")
             .single();
+    let result = await write(payload);
+    if (result.error && isMissingCoordColumn(result.error.message)) {
+      result = await write(withoutCoords(payload));
+    }
 
     if (result.error || !result.data) {
       setSubmitting(false);
@@ -210,8 +219,7 @@ export default function VenueForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 施設は保存されています。`,
       );
-      router.replace(`/venues/${venueId}`);
-      router.refresh();
+      replaceAppHref(router, `/venues/${venueId}`);
       return;
     }
 
@@ -230,14 +238,12 @@ export default function VenueForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      router.replace(`/venues/${venueId}`);
-      router.refresh();
+      replaceAppHref(router, `/venues/${venueId}`);
       return;
     }
 
     setSubmitting(false);
-    router.replace(`/venues/${venueId}`);
-    router.refresh();
+    replaceAppHref(router, `/venues/${venueId}`);
   }
 
   return (

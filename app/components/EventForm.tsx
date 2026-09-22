@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/components/AuthProvider";
@@ -23,6 +23,8 @@ import {
   type Attachment,
   type PendingAttachment,
 } from "@/lib/files";
+import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { replaceAppHref } from "@/lib/tab-nav";
 import {
   compressImageFile,
   MAX_EVENT_IMAGES,
@@ -55,6 +57,7 @@ export default function EventForm({
   const [placeMode, setPlaceMode] = useState<"venue" | "text">(
     initialPlaceMode(event, venues),
   );
+  const [venueOptions, setVenueOptions] = useState(venues);
   const [venueId, setVenueId] = useState(event?.venue_id ?? venues[0]?.id ?? "");
   const [locationText, setLocationText] = useState(event?.location_text ?? "");
   const [region, setRegion] = useState(event?.region || venues[0]?.region || regionOptions()[0]);
@@ -76,6 +79,22 @@ export default function EventForm({
   const [pendingPdfs, setPendingPdfs] = useState<PendingAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabase();
+    let cancelled = false;
+    void supabase
+      .from("venues")
+      .select("id, name, region")
+      .order("name")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setVenueOptions(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -141,14 +160,21 @@ export default function EventForm({
       return;
     }
 
+    setSubmitting(true);
     const emptyToNull = (value: string) => value.trim() || null;
+    const locationValue = placeMode === "text" ? locationText.trim() : null;
+    const coords =
+      placeMode === "text"
+        ? await coordinatesFor(locationValue, region)
+        : { lat: null, lng: null };
     const payload = {
       title: title.trim(),
       description: emptyToNull(description),
       start_at: startAt,
       end_at: endAt || null,
       venue_id: placeMode === "venue" ? venueId : null,
-      location_text: placeMode === "text" ? locationText.trim() : null,
+      location_text: locationValue,
+      ...coords,
       region,
       genre,
       time_text: emptyToNull(timeText),
@@ -173,19 +199,23 @@ export default function EventForm({
       return;
     }
 
-    setSubmitting(true);
     const supabase = createBrowserSupabase();
-    const result = isEdit && event
-      ? await supabase.from("events").update(payload).eq("id", event.id).select("id").single()
-      : await supabase
-          .from("events")
-          .insert({
-            ...payload,
-            created_by: user.id,
-            created_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
+    const write = (body: typeof payload | ReturnType<typeof withoutCoords<typeof payload>>) =>
+      isEdit && event
+        ? supabase.from("events").update(body).eq("id", event.id).select("id").single()
+        : supabase
+            .from("events")
+            .insert({
+              ...body,
+              created_by: user.id,
+              created_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+    let result = await write(payload);
+    if (result.error && isMissingCoordColumn(result.error.message)) {
+      result = await write(withoutCoords(payload));
+    }
 
     if (result.error || !result.data) {
       setSubmitting(false);
@@ -231,8 +261,7 @@ export default function EventForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} supabase/event-images-storage.sql を実行したか確認してください。`,
       );
-      router.replace(`/events/${eventId}`);
-      router.refresh();
+      replaceAppHref(router, `/events/${eventId}`);
       return;
     }
 
@@ -251,14 +280,12 @@ export default function EventForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      router.replace(`/events/${eventId}`);
-      router.refresh();
+      replaceAppHref(router, `/events/${eventId}`);
       return;
     }
 
     setSubmitting(false);
-    router.replace(`/events/${eventId}`);
-    router.refresh();
+    replaceAppHref(router, `/events/${eventId}`);
   }
 
   return (
@@ -316,7 +343,7 @@ export default function EventForm({
                 name="placeMode"
                 className="choice-radio"
                 checked={placeMode === "venue"}
-                disabled={venues.length === 0}
+                disabled={venueOptions.length === 0}
                 onChange={() => setPlaceMode("venue")}
               />
               登録済み施設
@@ -339,15 +366,15 @@ export default function EventForm({
                 onChange={(e) => {
                   const nextId = e.target.value;
                   setVenueId(nextId);
-                  const venue = venues.find((item) => item.id === nextId);
+                  const venue = venueOptions.find((item) => item.id === nextId);
                   if (venue?.region) setRegion(venue.region);
                 }}
                 className={inputClass}
               >
-                {venues.length === 0 ? (
+                {venueOptions.length === 0 ? (
                   <option value="">登録済み施設はまだありません</option>
                 ) : (
-                  venues.map((venue) => (
+                  venueOptions.map((venue) => (
                     <option key={venue.id} value={venue.id}>
                       {venue.name}
                     </option>
@@ -359,7 +386,7 @@ export default function EventForm({
             <input
               value={locationText}
               onChange={(e) => setLocationText(e.target.value)}
-              placeholder="例: 浜松市内のギャラリー"
+              placeholder="例: 浜松市中央区中央1-1"
               className={inputClass}
             />
           )}

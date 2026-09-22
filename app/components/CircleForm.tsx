@@ -19,6 +19,7 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { SNS_LINKS } from "@/lib/sns";
+import { replaceAppHref } from "@/lib/tab-nav";
 import {
   compressImageFile,
   MAX_CIRCLE_IMAGES,
@@ -202,8 +203,7 @@ export default function CircleForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 団体は保存されています。`,
       );
-      router.replace(`/circles/${circleId}`);
-      router.refresh();
+      replaceAppHref(router, `/circles/${circleId}`);
       return;
     }
 
@@ -222,14 +222,12 @@ export default function CircleForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      router.replace(`/circles/${circleId}`);
-      router.refresh();
+      replaceAppHref(router, `/circles/${circleId}`);
       return;
     }
 
     setSubmitting(false);
-    router.replace(`/circles/${circleId}`);
-    router.refresh();
+    replaceAppHref(router, `/circles/${circleId}`);
   }
 
   return (

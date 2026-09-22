@@ -11,7 +11,7 @@ import {
   sortEventsForList,
   type EventWithPlace,
 } from "@/lib/events";
-import { pinFromRegion } from "@/lib/geo";
+import type { MapPinSource } from "@/lib/geo";
 
 export default function EventBrowse({
   view,
@@ -42,13 +42,16 @@ export default function EventBrowse({
         }
 
         const listed = sortEventsForList(items);
-        const pins = items.map((event) =>
-          pinFromRegion(event.id, event.region, {
-            title: event.title,
-            href: `/events/${event.id}`,
-            subtitle: `${formatEventDateRange(event.start_at, event.end_at)} · ${event.placeLabel}`,
-          }),
-        );
+        const pins: MapPinSource[] = items.map((event) => ({
+          id: event.id,
+          title: event.title,
+          href: `/events/${event.id}`,
+          subtitle: `${formatEventDateRange(event.start_at, event.end_at)} · ${event.placeLabel}`,
+          lat: event.pinLat,
+          lng: event.pinLng,
+          region: event.region,
+          address: event.pinAddress,
+        }));
 
         if (view === "map") return <PlacesMap pins={pins} />;
         if (view === "calendar") {
