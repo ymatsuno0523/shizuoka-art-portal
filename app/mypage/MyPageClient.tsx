@@ -362,6 +362,7 @@ export default function MyPageClient() {
           <Link href="/mypage/terms">利用規約</Link>
           <Link href="/mypage/privacy">プライバシー</Link>
           <Link href="/mypage/help">ヘルプ</Link>
+          <Link href="/mypage/contact">お問い合わせ</Link>
         </p>
       </main>
     );
@@ -418,6 +419,7 @@ export default function MyPageClient() {
         <MenuRow href="/mypage/terms" title="利用規約" />
         <MenuRow href="/mypage/privacy" title="プライバシーポリシー" />
         <MenuRow href="/mypage/help" title="ヘルプ" />
+        <MenuRow href="/mypage/contact" title="お問い合わせ" />
       </section>
     </main>
   );

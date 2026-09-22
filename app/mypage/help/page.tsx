@@ -14,7 +14,8 @@ export default function HelpPage() {
       </p>
       <p>
         規約は <InfoLink href="/mypage/terms">利用規約</InfoLink>、個人情報は{" "}
-        <InfoLink href="/mypage/privacy">プライバシーポリシー</InfoLink> を見てください。
+        <InfoLink href="/mypage/privacy">プライバシーポリシー</InfoLink> を見てください。不備や掲載の間違いは{" "}
+        <InfoLink href="/mypage/contact">お問い合わせ</InfoLink> から連絡できます。
       </p>
     </InfoArticle>
   );

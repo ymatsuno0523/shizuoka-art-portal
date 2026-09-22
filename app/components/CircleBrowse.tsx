@@ -29,7 +29,7 @@ export default function CircleBrowse({
               <li key={circle.id}>
                 <Link
                   href={`/circles/${circle.id}`}
-                  className="flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
+                  className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                 >
                   {circle.images[0] ? (
                     <img

@@ -45,7 +45,7 @@ export default function VenueBrowse({
               <li key={venue.id}>
                 <Link
                   href={`/venues/${venue.id}`}
-                  className="flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
+                  className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                 >
                   {venue.images[0] ? (
                     <img

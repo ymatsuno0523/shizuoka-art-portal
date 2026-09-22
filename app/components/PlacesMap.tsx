@@ -139,7 +139,7 @@ export default function PlacesMap({ pins }: { pins: MapPinSource[] }) {
       {selected ? (
         <Link
           href={selected.href}
-          className="mb-3 block rounded-[8px] border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+          className="press-card mb-3 block rounded-[8px] border border-zinc-200 px-3 py-2 dark:border-zinc-800"
         >
           <p className="font-semibold">{selected.title}</p>
           <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">

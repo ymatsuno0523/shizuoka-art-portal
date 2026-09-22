@@ -114,7 +114,9 @@ export default function BottomNav() {
                   openTab(router, pathname, item.tab, item.href);
                 }}
               >
-                <Icon active={active} />
+                <span className="nav-press">
+                  <Icon active={active} />
+                </span>
                 {item.label}
               </Link>
             </li>

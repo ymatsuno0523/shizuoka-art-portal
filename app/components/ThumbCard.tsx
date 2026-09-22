@@ -13,7 +13,7 @@ export default function ThumbCard({
   footer?: ReactNode;
 }) {
   return (
-    <li className="flex items-end gap-2 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800">
+    <li className="press-card flex items-end gap-2 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800">
       <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
         {imageUrl ? (
           <img

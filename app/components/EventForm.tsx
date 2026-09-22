@@ -58,9 +58,9 @@ export default function EventForm({
     initialPlaceMode(event, venues),
   );
   const [venueOptions, setVenueOptions] = useState(venues);
-  const [venueId, setVenueId] = useState(event?.venue_id ?? venues[0]?.id ?? "");
+  const [venueId, setVenueId] = useState(event?.venue_id ?? "");
   const [locationText, setLocationText] = useState(event?.location_text ?? "");
-  const [region, setRegion] = useState(event?.region || venues[0]?.region || regionOptions()[0]);
+  const [region, setRegion] = useState(event?.region || regionOptions()[0]);
   const [genre, setGenre] = useState(parseLabels(event?.genre));
   const [orgMode, setOrgMode] = useState<"org" | "text">(initialOrgMode(event, orgs));
   const [circleId, setCircleId] = useState(event?.circle_id ?? orgs[0]?.id ?? "");
@@ -150,19 +150,9 @@ export default function EventForm({
       return;
     }
 
-    if (placeMode === "venue" && !venueId) {
-      setError("施設を選ぶか、手打ちに切り替えてください。");
-      return;
-    }
-
-    if (placeMode === "text" && !locationText.trim()) {
-      setError("場所を入力してください。");
-      return;
-    }
-
     setSubmitting(true);
     const emptyToNull = (value: string) => value.trim() || null;
-    const locationValue = placeMode === "text" ? locationText.trim() : null;
+    const locationValue = placeMode === "text" ? emptyToNull(locationText) : null;
     const coords =
       placeMode === "text"
         ? await coordinatesFor(locationValue, region)
@@ -172,7 +162,7 @@ export default function EventForm({
       description: emptyToNull(description),
       start_at: startAt,
       end_at: endAt || null,
-      venue_id: placeMode === "venue" ? venueId : null,
+      venue_id: placeMode === "venue" ? emptyToNull(venueId) : null,
       location_text: locationValue,
       ...coords,
       region,
@@ -335,7 +325,7 @@ export default function EventForm({
         </div>
 
         <fieldset className="space-y-2 text-sm">
-          <legend>会場</legend>
+          <legend>会場（任意）</legend>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <label className="flex items-center gap-1.5">
               <input
@@ -371,15 +361,12 @@ export default function EventForm({
                 }}
                 className={inputClass}
               >
-                {venueOptions.length === 0 ? (
-                  <option value="">登録済み施設はまだありません</option>
-                ) : (
-                  venueOptions.map((venue) => (
-                    <option key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </option>
-                  ))
-                )}
+                <option value="">指定しない</option>
+                {venueOptions.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </option>
+                ))}
               </select>
             </div>
           ) : (
