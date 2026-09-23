@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import NoImage from "@/app/components/NoImage";
 
 export default function ThumbCard({
   href,
@@ -22,7 +23,7 @@ export default function ThumbCard({
             className="h-[70px] w-[70px] shrink-0 rounded-[6px] object-cover"
           />
         ) : (
-          <div className="h-[70px] w-[70px] shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
+          <NoImage className="h-[70px] w-[70px] shrink-0 rounded-[6px]" />
         )}
         <div className="min-w-0 flex-1">{children}</div>
       </Link>

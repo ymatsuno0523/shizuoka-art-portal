@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import EventCalendar from "@/app/components/EventCalendar";
 import MineGate from "@/app/components/MineGate";
+import NoImage from "@/app/components/NoImage";
 import PlacesMap from "@/app/components/PlacesMap";
 import {
   formatEventDateRange,
@@ -82,7 +83,7 @@ export default function EventBrowse({
                       className="h-[70px] w-[70px] shrink-0 rounded-[6px] object-cover"
                     />
                   ) : (
-                    <div className="h-[70px] w-[70px] shrink-0 rounded-[6px] bg-zinc-100 dark:bg-zinc-800" />
+                    <NoImage className="h-[70px] w-[70px] shrink-0 rounded-[6px]" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
