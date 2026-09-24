@@ -55,6 +55,7 @@ alter table public.events add column if not exists time_text text;
 alter table public.events add column if not exists schedule_note text;
 alter table public.events add column if not exists fee_text text;
 alter table public.events add column if not exists organizer text;
+alter table public.events add column if not exists support_text text;
 alter table public.events add column if not exists contact_name text;
 alter table public.events add column if not exists contact_phone text;
 alter table public.events add column if not exists contact_email text;

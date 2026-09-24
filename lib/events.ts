@@ -16,6 +16,7 @@ export type EventRow = {
   end_at: string | null;
   venue_id: string | null;
   location_text: string | null;
+  address?: string | null;
   region: string | null;
   lat?: number | null;
   lng?: number | null;
@@ -26,6 +27,7 @@ export type EventRow = {
   schedule_note?: string | null;
   fee_text?: string | null;
   organizer?: string | null;
+  support_text?: string | null;
   contact_name?: string | null;
   contact_phone?: string | null;
   contact_email?: string | null;
@@ -63,7 +65,7 @@ function pinFields(event: EventRow, venue?: VenuePlace) {
   return {
     pinLat: event.lat ?? null,
     pinLng: event.lng ?? null,
-    pinAddress: event.location_text,
+    pinAddress: event.address?.trim() || null,
   };
 }
 

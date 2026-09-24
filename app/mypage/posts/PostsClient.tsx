@@ -145,7 +145,7 @@ export default function PostsClient() {
   }, [user]);
 
   async function handleDeleteEvent(id: string) {
-    if (!confirm("このイベントを削除しますか？")) return;
+    if (!confirm("このイベントを削除しますか？画像とPDFも一緒に消えます。")) return;
     const result = await deleteOwnedContent("event", id);
     if (result.error) {
       setError(result.error);

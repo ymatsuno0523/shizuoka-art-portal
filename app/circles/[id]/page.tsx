@@ -59,7 +59,7 @@ export default async function CircleDetailPage({
 
       <dl className="mt-8 divide-y divide-zinc-200 dark:divide-zinc-800">
         <InfoRow label="種類" value={joinLabels(circle.kind)} />
-        <InfoRow label="地域" value={circle.region} />
+        <InfoRow label="地域" value={circle.address?.trim() ? null : circle.region} />
         <InfoRow label="ジャンル" value={circle.genre} />
         <InfoRow label="活動場所" value={circle.address} />
         <InfoRow label="代表" value={circle.representative} />

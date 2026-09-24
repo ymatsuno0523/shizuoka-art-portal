@@ -69,7 +69,8 @@ export default async function EventDetailPage({
         ) : (
           <InfoRow label="会場" value={event.placeLabel} />
         )}
-        <InfoRow label="地域" value={event.region} />
+        <InfoRow label="住所" value={event.pinAddress} />
+        <InfoRow label="地域" value={event.pinAddress?.trim() ? null : event.region} />
         <InfoRow label="料金" value={event.fee_text} />
         {event.circle_id && event.organizerLabel ? (
           <div className={infoGridClass}>
@@ -83,6 +84,7 @@ export default async function EventDetailPage({
         ) : (
           <InfoRow label="主催" value={event.organizerLabel} />
         )}
+        <InfoRow label="共催・後援" value={event.support_text} />
         <InfoRow label="問い合わせ" value={event.contact_name} />
         <InfoRow label="電話" value={event.contact_phone} />
         <InfoRow label="メール" value={event.contact_email} />

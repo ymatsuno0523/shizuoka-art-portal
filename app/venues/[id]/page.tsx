@@ -60,7 +60,7 @@ export default async function VenueDetailPage({
       <dl className="mt-8 divide-y divide-zinc-200 dark:divide-zinc-800">
         <InfoRow label="種類" value={joinLabels(venue.kind)} />
         <InfoRow label="住所" value={venue.address} />
-        <InfoRow label="地域" value={venue.region} />
+        <InfoRow label="地域" value={venue.address?.trim() ? null : venue.region} />
         <InfoRow label="電話" value={venue.phone} />
         <InfoRow label="営業時間" value={venue.hours_text} />
         <InfoRow label="定休日" value={venue.holiday_text} />

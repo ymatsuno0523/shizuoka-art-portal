@@ -1,4 +1,4 @@
--- ジャンル・種類を複数選択（text[]、最大2、その他は単独）にする。
+-- ジャンル・種類を複数選択（text[]、最大2）にする。
 -- 団体の「企業・スタジオ」は「企業・事務所」へ。何度 Run しても同じ結果。
 
 alter table public.events drop constraint if exists events_category_check;
@@ -152,10 +152,6 @@ update public.events set genre = array['その他'] where genre is null or cardi
 update public.venues set kind = array['ギャラリー'] where kind is null or cardinality(kind) = 0;
 update public.circles set kind = array['サークル'] where kind is null or cardinality(kind) = 0;
 
-update public.events set genre = array['その他'] where 'その他' = any (genre) and cardinality(genre) > 1;
-update public.venues set kind = array['その他'] where 'その他' = any (kind) and cardinality(kind) > 1;
-update public.circles set kind = array['その他'] where 'その他' = any (kind) and cardinality(kind) > 1;
-
 update public.events set genre = genre[1:2] where cardinality(genre) > 2;
 update public.venues set kind = kind[1:2] where cardinality(kind) > 2;
 update public.circles set kind = kind[1:2] where cardinality(kind) > 2;
@@ -180,7 +176,6 @@ alter table public.events
       '公募・レジデンス',
       'その他'
     ]::text[]
-    and (not ('その他' = any (genre)) or cardinality(genre) = 1)
   );
 
 alter table public.venues
@@ -196,7 +191,6 @@ alter table public.venues
       '公共施設',
       'その他'
     ]::text[]
-    and (not ('その他' = any (kind)) or cardinality(kind) = 1)
   );
 
 alter table public.circles
@@ -209,5 +203,4 @@ alter table public.circles
       '企業・事務所',
       'その他'
     ]::text[]
-    and (not ('その他' = any (kind)) or cardinality(kind) = 1)
   );

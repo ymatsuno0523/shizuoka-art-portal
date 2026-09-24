@@ -26,6 +26,7 @@ create table if not exists public.events (
 
 alter table public.events add column if not exists venue_id uuid;
 alter table public.events add column if not exists location_text text;
+alter table public.events add column if not exists address text;
 alter table public.events add column if not exists region text;
 alter table public.events add column if not exists genre text;
 alter table public.events add column if not exists created_by uuid;
@@ -34,6 +35,7 @@ alter table public.events add column if not exists time_text text;
 alter table public.events add column if not exists schedule_note text;
 alter table public.events add column if not exists fee_text text;
 alter table public.events add column if not exists organizer text;
+alter table public.events add column if not exists support_text text;
 alter table public.events add column if not exists contact_name text;
 alter table public.events add column if not exists contact_phone text;
 alter table public.events add column if not exists contact_email text;

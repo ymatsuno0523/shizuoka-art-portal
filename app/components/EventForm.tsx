@@ -60,6 +60,7 @@ export default function EventForm({
   const [venueOptions, setVenueOptions] = useState(venues);
   const [venueId, setVenueId] = useState(event?.venue_id ?? "");
   const [locationText, setLocationText] = useState(event?.location_text ?? "");
+  const [address, setAddress] = useState(event?.address ?? "");
   const [region, setRegion] = useState(event?.region || regionOptions()[0]);
   const [genre, setGenre] = useState(parseLabels(event?.genre));
   const [orgMode, setOrgMode] = useState<"org" | "text">(initialOrgMode(event, orgs));
@@ -68,6 +69,7 @@ export default function EventForm({
   const [scheduleNote, setScheduleNote] = useState(event?.schedule_note ?? "");
   const [feeText, setFeeText] = useState(event?.fee_text ?? "");
   const [organizer, setOrganizer] = useState(event?.organizer ?? "");
+  const [supportText, setSupportText] = useState(event?.support_text ?? "");
   const [contactName, setContactName] = useState(event?.contact_name ?? "");
   const [contactPhone, setContactPhone] = useState(event?.contact_phone ?? "");
   const [contactEmail, setContactEmail] = useState(event?.contact_email ?? "");
@@ -153,10 +155,10 @@ export default function EventForm({
     setSubmitting(true);
     const emptyToNull = (value: string) => value.trim() || null;
     const locationValue = placeMode === "text" ? emptyToNull(locationText) : null;
-    const coords =
-      placeMode === "text"
-        ? await coordinatesFor(locationValue, region)
-        : { lat: null, lng: null };
+    const addressValue = placeMode === "text" ? emptyToNull(address) : null;
+    const coords = addressValue
+      ? await coordinatesFor(addressValue, region)
+      : { lat: null, lng: null };
     const payload = {
       title: title.trim(),
       description: emptyToNull(description),
@@ -164,6 +166,7 @@ export default function EventForm({
       end_at: endAt || null,
       venue_id: placeMode === "venue" ? emptyToNull(venueId) : null,
       location_text: locationValue,
+      address: addressValue,
       ...coords,
       region,
       genre,
@@ -172,6 +175,7 @@ export default function EventForm({
       fee_text: emptyToNull(feeText),
       circle_id: orgMode === "org" && circleId ? circleId : null,
       organizer: orgMode === "text" ? emptyToNull(organizer) : null,
+      support_text: emptyToNull(supportText),
       contact_name: emptyToNull(contactName),
       contact_phone: emptyToNull(contactPhone),
       contact_email: emptyToNull(contactEmail),
@@ -209,9 +213,13 @@ export default function EventForm({
 
     if (result.error || !result.data) {
       setSubmitting(false);
-      setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/multi-labels.sql を実行したか確認してください。`,
-      );
+      const message = result.error?.message ?? "保存に失敗しました。";
+      const hint = /support_text/.test(message)
+        ? "supabase/event-support-text.sql を実行したか確認してください。"
+        : /address/.test(message)
+          ? "supabase/event-address.sql を実行したか確認してください。"
+          : "supabase/multi-labels.sql を実行したか確認してください。";
+      setError(`${message} ${hint}`);
       return;
     }
 
@@ -299,7 +307,7 @@ export default function EventForm({
           options={withUnknownLabels(CATEGORIES, genre)}
           values={genre}
           onChange={setGenre}
-          hint="最大2つまで。その他のみ他は選べません。"
+          hint="最大2つまで。"
         />
 
         <div className="grid grid-cols-2 gap-3">
@@ -370,12 +378,26 @@ export default function EventForm({
               </select>
             </div>
           ) : (
-            <input
-              value={locationText}
-              onChange={(e) => setLocationText(e.target.value)}
-              placeholder="例: 浜松市中央区中央1-1"
-              className={inputClass}
-            />
+            <div className="space-y-2">
+              <label className="block">
+                会場名（任意）
+                <input
+                  value={locationText}
+                  onChange={(e) => setLocationText(e.target.value)}
+                  placeholder="例: ○○ホール"
+                  className={`${inputClass} mt-1`}
+                />
+              </label>
+              <label className="block">
+                住所（任意）
+                <input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="例: 浜松市中央区中央1-1"
+                  className={`${inputClass} mt-1`}
+                />
+              </label>
+            </div>
           )}
         </fieldset>
 
@@ -479,6 +501,17 @@ export default function EventForm({
             />
           )}
         </fieldset>
+
+        <label className="block text-sm">
+          共催・後援（任意）
+          <textarea
+            rows={3}
+            value={supportText}
+            onChange={(e) => setSupportText(e.target.value)}
+            placeholder={"例: 共催 ○○美術館\n後援 浜松市、○○新聞"}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
 
         <label className="block text-sm">
           問い合わせ先（任意）

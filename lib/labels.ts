@@ -1,5 +1,4 @@
 export const MAX_LABELS = 2;
-export const OTHER_LABEL = "その他";
 
 export function parseLabels(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -23,10 +22,8 @@ export function toggleClosedLabel(selected: string[], option: string, max = MAX_
   if (selected.includes(option)) {
     return selected.filter((item) => item !== option);
   }
-  if (option === OTHER_LABEL) return [OTHER_LABEL];
-  const next = selected.filter((item) => item !== OTHER_LABEL);
-  if (next.length >= max) return next;
-  return [...next, option];
+  if (selected.length >= max) return selected;
+  return [...selected, option];
 }
 
 export function matchesAnyFilter(value: unknown, selected: string[]) {

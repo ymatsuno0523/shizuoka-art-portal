@@ -251,7 +251,7 @@ export default function CircleForm({
           options={orgKindOptions(kind)}
           values={kind}
           onChange={setKind}
-          hint="最大2つまで。その他のみ他は選べません。"
+          hint="最大2つまで。"
         />
 
         <label className="block text-sm">

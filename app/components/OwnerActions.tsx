@@ -7,7 +7,7 @@ import { useAuth } from "@/app/components/AuthProvider";
 import { deleteOwnedContent } from "@/lib/delete-content";
 
 const confirmMessage = {
-  event: "このイベントを削除しますか？",
+  event: "このイベントを削除しますか？画像とPDFも一緒に消えます。",
   venue: "この施設を削除しますか？画像とPDFも一緒に消えます。",
   circle: "この団体を削除しますか？画像とPDFも一緒に消えます。",
 } as const;

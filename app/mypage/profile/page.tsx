@@ -30,6 +30,7 @@ export default function ProfileForm() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -128,6 +129,48 @@ export default function ProfileForm() {
     router.refresh();
   }
 
+  async function handleDeleteAccount() {
+    if (!user || deletingAccount) return;
+    const confirmed = window.confirm(
+      "アカウントを削除しますか？プロフィールとプロフィール画像は消えます。登録したイベント・施設・団体の掲載は残ります。この操作は取り消せません。",
+    );
+    if (!confirmed) return;
+
+    setError(null);
+    setDeletingAccount(true);
+    const supabase = createBrowserSupabase();
+    const { data: stored } = await supabase.storage.from(BUCKET).list(user.id);
+    const paths = (stored ?? []).flatMap((item) =>
+      item.name ? [`${user.id}/${item.name}`] : [],
+    );
+    if (avatarUrl) {
+      const currentPath = storagePathFromPublicUrl(avatarUrl, BUCKET);
+      if (currentPath && !paths.includes(currentPath)) paths.push(currentPath);
+    }
+    if (paths.length > 0) {
+      const { error: storageError } = await supabase.storage.from(BUCKET).remove(paths);
+      if (storageError) {
+        setDeletingAccount(false);
+        setError(storageError.message);
+        return;
+      }
+    }
+
+    const { error: deleteError } = await supabase.rpc("delete_own_account");
+    if (deleteError) {
+      setDeletingAccount(false);
+      setError(
+        `${deleteError.message} supabase/delete-account.sql を実行したか確認してください。`,
+      );
+      return;
+    }
+
+    await supabase.auth.signOut();
+    setNavMode("replace");
+    router.replace("/mypage");
+    router.refresh();
+  }
+
   return (
     <main className="px-4 py-6">
       <HistoryBack href="/mypage">← マイページ</HistoryBack>
@@ -171,8 +214,6 @@ export default function ProfileForm() {
           />
         </label>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
         <button
           type="submit"
           disabled={submitting}
@@ -181,6 +222,15 @@ export default function ProfileForm() {
           {submitting ? "保存中..." : "保存する"}
         </button>
       </form>
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      <button
+        type="button"
+        onClick={handleDeleteAccount}
+        disabled={deletingAccount || submitting}
+        className="mt-10 block w-full text-center text-sm text-red-600 disabled:opacity-60"
+      >
+        {deletingAccount ? "削除しています..." : "アカウントを削除"}
+      </button>
     </main>
   );
 }
