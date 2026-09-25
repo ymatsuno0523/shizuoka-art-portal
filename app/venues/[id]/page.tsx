@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
@@ -8,6 +8,7 @@ import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
 import { joinLabels } from "@/lib/labels";
+import { contentHref, replacedSlugPath } from "@/lib/slug";
 import { getVenue } from "@/lib/venues";
 
 export default async function VenueDetailPage({
@@ -30,6 +31,9 @@ export default async function VenueDetailPage({
   }
 
   if (!venue) notFound();
+  const canonical = replacedSlugPath("venues", id, venue.slug);
+  if (canonical) redirect(canonical);
+  const path = contentHref("venues", venue);
 
   return (
     <main className="px-4 py-6">
@@ -40,7 +44,7 @@ export default async function VenueDetailPage({
           table="venue_saves"
           idColumn="venue_id"
           entityId={venue.id}
-          loginPath={`/venues/${venue.id}`}
+          loginPath={path}
         />
       </div>
       <div className="mt-4">
@@ -85,7 +89,7 @@ export default async function VenueDetailPage({
         <OwnerActions
           kind="venue"
           id={venue.id}
-          editHref={`/venues/${venue.id}/edit`}
+          editHref={`${path}/edit`}
           createdBy={venue.created_by}
           listHref="/venues"
         />

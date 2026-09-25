@@ -2,7 +2,8 @@ import EventForm from "@/app/components/EventForm";
 import { getEvent } from "@/lib/events";
 import { createSupabaseClient } from "@/lib/supabase";
 import type { OrgOption, VenueOption } from "@/lib/event-form";
-import { notFound } from "next/navigation";
+import { replacedSlugPath } from "@/lib/slug";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function EditEventPage({
     );
   }
   if (!event) notFound();
+  const canonical = replacedSlugPath("events", id, event.slug, "/edit");
+  if (canonical) redirect(canonical);
 
   const supabase = createSupabaseClient();
   const [{ data: venues }, { data: orgs }] = await Promise.all([

@@ -8,6 +8,7 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 import LabelChecks from "@/app/components/LabelChecks";
 import ImageFields from "@/app/components/ImageFields";
 import PdfFields from "@/app/components/PdfFields";
+import SlugField from "@/app/components/SlugField";
 import type { EventImage, EventRow } from "@/lib/events";
 import {
   CATEGORIES,
@@ -24,6 +25,7 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import {
   compressImageFile,
@@ -75,6 +77,7 @@ export default function EventForm({
   const [contactEmail, setContactEmail] = useState(event?.contact_email ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(event?.website_url ?? "");
   const [parkingText, setParkingText] = useState(event?.parking_text ?? "");
+  const [slugText, setSlugText] = useState(event?.slug ?? "");
   const [keptImages, setKeptImages] = useState<EventImage[]>(event?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
   const [keptPdfs, setKeptPdfs] = useState<Attachment[]>(event?.files ?? []);
@@ -107,7 +110,7 @@ export default function EventForm({
   }
 
   if (!user) {
-    const next = isEdit && event ? `/events/${event.id}/edit` : "/events/new";
+    const next = isEdit && event ? contentHref("events", event, "/edit") : "/events/new";
     return (
       <main className="px-4 py-6">
         <h1 className="mb-3 text-lg font-bold">
@@ -130,7 +133,7 @@ export default function EventForm({
     return (
       <main className="px-4 py-6">
         <p className="text-sm text-zinc-600">このイベントを編集する権限がありません。</p>
-        <Link href={`/events/${event.id}`} className="mt-3 inline-block text-sm text-zinc-500">
+        <Link href={contentHref("events", event)} className="mt-3 inline-block text-sm text-zinc-500">
           詳細へ戻る
         </Link>
       </main>
@@ -149,6 +152,12 @@ export default function EventForm({
 
     if (genre.length === 0) {
       setError("ジャンルを1つ以上選んでください。");
+      return;
+    }
+
+    const parsedSlug = parseSlug(slugText);
+    if (parsedSlug.error) {
+      setError(parsedSlug.error);
       return;
     }
 
@@ -181,6 +190,7 @@ export default function EventForm({
       contact_email: emptyToNull(contactEmail),
       website_url: emptyToNull(websiteUrl),
       parking_text: emptyToNull(parkingText),
+      slug: parsedSlug.slug,
     };
 
     if (keptImages.length + files.length > MAX_EVENT_IMAGES) {
@@ -210,20 +220,32 @@ export default function EventForm({
     if (result.error && isMissingCoordColumn(result.error.message)) {
       result = await write(withoutCoords(payload));
     }
+    if (result.error && isMissingSlugColumn(result.error.message)) {
+      if (parsedSlug.slug) {
+        setSubmitting(false);
+        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        return;
+      }
+      result = await write(withoutSlug(withoutCoords(payload)) as typeof payload);
+    }
 
     if (result.error || !result.data) {
       setSubmitting(false);
       const message = result.error?.message ?? "保存に失敗しました。";
-      const hint = /support_text/.test(message)
-        ? "supabase/event-support-text.sql を実行したか確認してください。"
-        : /address/.test(message)
-          ? "supabase/event-address.sql を実行したか確認してください。"
-          : "supabase/multi-labels.sql を実行したか確認してください。";
-      setError(`${message} ${hint}`);
+      const slugHint = slugSaveHint(message);
+      const hint = slugHint
+        ? slugHint
+        : /support_text/.test(message)
+          ? `${message} supabase/event-support-text.sql を実行したか確認してください。`
+          : /address/.test(message)
+            ? `${message} supabase/event-address.sql を実行したか確認してください。`
+            : `${message} supabase/multi-labels.sql を実行したか確認してください。`;
+      setError(hint);
       return;
     }
 
     const eventId = result.data.id;
+    const savedPath = contentHref("events", { id: eventId, slug: parsedSlug.slug });
     const bucket = "event-images";
 
     try {
@@ -259,7 +281,7 @@ export default function EventForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} supabase/event-images-storage.sql を実行したか確認してください。`,
       );
-      replaceAppHref(router, `/events/${eventId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
@@ -278,12 +300,12 @@ export default function EventForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      replaceAppHref(router, `/events/${eventId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
     setSubmitting(false);
-    replaceAppHref(router, `/events/${eventId}`);
+    replaceAppHref(router, savedPath);
   }
 
   return (
@@ -588,12 +610,14 @@ export default function EventForm({
           />
         </label>
 
+        <SlugField value={slugText} onChange={setSlugText} />
+
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="!mt-6 w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
         >
           {submitting ? "保存中..." : isEdit ? "変更を保存" : "投稿する"}
         </button>

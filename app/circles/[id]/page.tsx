@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
@@ -9,6 +9,7 @@ import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
 import { getCircle } from "@/lib/circles";
 import { joinLabels } from "@/lib/labels";
+import { contentHref, replacedSlugPath } from "@/lib/slug";
 
 export default async function CircleDetailPage({
   params,
@@ -30,6 +31,9 @@ export default async function CircleDetailPage({
   }
 
   if (!circle) notFound();
+  const canonical = replacedSlugPath("circles", id, circle.slug);
+  if (canonical) redirect(canonical);
+  const path = contentHref("circles", circle);
 
   return (
     <main className="px-4 py-6">
@@ -40,7 +44,7 @@ export default async function CircleDetailPage({
           table="circle_saves"
           idColumn="circle_id"
           entityId={circle.id}
-          loginPath={`/circles/${circle.id}`}
+          loginPath={path}
         />
       </div>
       <div className="mt-4">
@@ -81,7 +85,7 @@ export default async function CircleDetailPage({
         <OwnerActions
           kind="circle"
           id={circle.id}
-          editHref={`/circles/${circle.id}/edit`}
+          editHref={`${path}/edit`}
           createdBy={circle.created_by}
           listHref="/circles"
         />

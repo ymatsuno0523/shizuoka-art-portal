@@ -8,6 +8,7 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 import LabelChecks from "@/app/components/LabelChecks";
 import ImageFields from "@/app/components/ImageFields";
 import PdfFields from "@/app/components/PdfFields";
+import SlugField from "@/app/components/SlugField";
 import { REGIONS } from "@/lib/event-form";
 import { regionOptions, venueKindOptions } from "@/lib/event-payload";
 import { parseLabels } from "@/lib/labels";
@@ -18,6 +19,7 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import { SNS_LINKS } from "@/lib/sns";
 import type { VenueImage, VenueRow } from "@/lib/venues";
@@ -58,6 +60,7 @@ export default function VenueForm({
   const [parkingText, setParkingText] = useState(venue?.parking_text ?? "");
   const [paymentText, setPaymentText] = useState(venue?.payment_text ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(venue?.website_url ?? "");
+  const [slugText, setSlugText] = useState(venue?.slug ?? "");
   const [sns, setSns] = useState({
     sns_instagram: venue?.sns_instagram ?? "",
     sns_x: venue?.sns_x ?? "",
@@ -79,7 +82,7 @@ export default function VenueForm({
   }
 
   if (!user) {
-    const next = isEdit && venue ? `/venues/${venue.id}/edit` : "/venues/new";
+    const next = isEdit && venue ? contentHref("venues", venue, "/edit") : "/venues/new";
     return (
       <main className="px-4 py-6">
         <h1 className="mb-3 text-lg font-bold">
@@ -102,7 +105,7 @@ export default function VenueForm({
     return (
       <main className="px-4 py-6">
         <p className="text-sm text-zinc-600">この施設を編集する権限がありません。</p>
-        <Link href={`/venues/${venue.id}`} className="mt-3 inline-block text-sm text-zinc-500">
+        <Link href={contentHref("venues", venue)} className="mt-3 inline-block text-sm text-zinc-500">
           詳細へ戻る
         </Link>
       </main>
@@ -134,6 +137,12 @@ export default function VenueForm({
       return;
     }
 
+    const parsedSlug = parseSlug(slugText);
+    if (parsedSlug.error) {
+      setError(parsedSlug.error);
+      return;
+    }
+
     setSubmitting(true);
     const addressValue = emptyToNull(address);
     const coords = await coordinatesFor(addressValue, region);
@@ -156,6 +165,7 @@ export default function VenueForm({
       sns_instagram: emptyToNull(sns.sns_instagram),
       sns_x: emptyToNull(sns.sns_x),
       sns_line: emptyToNull(sns.sns_line),
+      slug: parsedSlug.slug,
     };
 
     const supabase = createBrowserSupabase();
@@ -175,16 +185,24 @@ export default function VenueForm({
     if (result.error && isMissingCoordColumn(result.error.message)) {
       result = await write(withoutCoords(payload));
     }
+    if (result.error && isMissingSlugColumn(result.error.message)) {
+      if (parsedSlug.slug) {
+        setSubmitting(false);
+        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        return;
+      }
+      result = await write(withoutSlug(withoutCoords(payload)) as typeof payload);
+    }
 
     if (result.error || !result.data) {
       setSubmitting(false);
-      setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/multi-labels.sql を実行したか確認してください。`,
-      );
+      const message = result.error?.message ?? "保存に失敗しました。";
+      setError(slugSaveHint(message) ?? `${message} supabase/multi-labels.sql を実行したか確認してください。`);
       return;
     }
 
     const venueId = result.data.id;
+    const savedPath = contentHref("venues", { id: venueId, slug: parsedSlug.slug });
 
     try {
       const removed = (venue?.images ?? []).filter(
@@ -219,7 +237,7 @@ export default function VenueForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 施設は保存されています。`,
       );
-      replaceAppHref(router, `/venues/${venueId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
@@ -238,12 +256,12 @@ export default function VenueForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      replaceAppHref(router, `/venues/${venueId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
     setSubmitting(false);
-    replaceAppHref(router, `/venues/${venueId}`);
+    replaceAppHref(router, savedPath);
   }
 
   return (
@@ -435,12 +453,14 @@ export default function VenueForm({
           onPendingChange={setPendingPdfs}
         />
 
+        <SlugField value={slugText} onChange={setSlugText} />
+
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="!mt-6 w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
         >
           {submitting ? "保存中..." : isEdit ? "変更を保存" : "登録する"}
         </button>

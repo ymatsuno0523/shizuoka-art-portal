@@ -13,6 +13,7 @@ import {
   type EventWithPlace,
 } from "@/lib/events";
 import type { MapPinSource } from "@/lib/geo";
+import { contentHref } from "@/lib/slug";
 
 export default function EventBrowse({
   view,
@@ -46,7 +47,7 @@ export default function EventBrowse({
         const pins: MapPinSource[] = items.map((event) => ({
           id: event.id,
           title: event.title,
-          href: `/events/${event.id}`,
+          href: contentHref("events", event),
           subtitle: `${formatEventDateRange(event.start_at, event.end_at)} · ${event.placeLabel}`,
           lat: event.pinLat,
           lng: event.pinLng,
@@ -60,6 +61,7 @@ export default function EventBrowse({
             <EventCalendar
               events={items.map((event) => ({
                 id: event.id,
+                slug: event.slug,
                 title: event.title,
                 start_at: event.start_at,
                 end_at: event.end_at,
@@ -73,7 +75,7 @@ export default function EventBrowse({
             {listed.map((event) => (
               <li key={event.id}>
                 <Link
-                  href={`/events/${event.id}`}
+                  href={contentHref("events", event)}
                   className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                 >
                   {event.images[0] ? (

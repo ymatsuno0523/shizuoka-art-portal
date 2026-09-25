@@ -1,6 +1,7 @@
 import VenueForm from "@/app/components/VenueForm";
 import { getVenue } from "@/lib/venues";
-import { notFound } from "next/navigation";
+import { replacedSlugPath } from "@/lib/slug";
+import { notFound, redirect } from "next/navigation";
 
 export default async function EditVenuePage({
   params,
@@ -17,5 +18,7 @@ export default async function EditVenuePage({
     );
   }
   if (!venue) notFound();
+  const canonical = replacedSlugPath("venues", id, venue.slug, "/edit");
+  if (canonical) redirect(canonical);
   return <VenueForm venue={venue} />;
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import EventReactionBar from "@/app/components/EventReactionBar";
@@ -8,6 +8,7 @@ import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import { formatEventDateRange, getEvent } from "@/lib/events";
+import { contentHref, replacedSlugPath } from "@/lib/slug";
 
 export default async function EventDetailPage({
   params,
@@ -28,6 +29,8 @@ export default async function EventDetailPage({
   }
 
   if (!event) notFound();
+  const canonical = replacedSlugPath("events", id, event.slug);
+  if (canonical) redirect(canonical);
 
   const dateLabel = formatEventDateRange(event.start_at, event.end_at);
 
@@ -61,7 +64,10 @@ export default async function EventDetailPage({
           <div className={infoGridClass}>
             <dt className="text-zinc-500">会場</dt>
             <dd>
-              <Link href={`/venues/${event.venue_id}`} className="underline">
+              <Link
+                href={contentHref("venues", { id: event.venue_id, slug: event.venueSlug })}
+                className="underline"
+              >
                 {event.placeLabel}
               </Link>
             </dd>
@@ -76,7 +82,10 @@ export default async function EventDetailPage({
           <div className={infoGridClass}>
             <dt className="text-zinc-500">主催</dt>
             <dd>
-              <Link href={`/circles/${event.circle_id}`} className="underline">
+              <Link
+                href={contentHref("circles", { id: event.circle_id, slug: event.circleSlug })}
+                className="underline"
+              >
                 {event.organizerLabel}
               </Link>
             </dd>
@@ -98,7 +107,7 @@ export default async function EventDetailPage({
         <OwnerActions
           kind="event"
           id={event.id}
-          editHref={`/events/${event.id}/edit`}
+          editHref={contentHref("events", event, "/edit")}
           createdBy={event.created_by}
           listHref="/events"
         />

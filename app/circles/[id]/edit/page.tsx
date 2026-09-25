@@ -1,6 +1,7 @@
 import CircleForm from "@/app/components/CircleForm";
 import { getCircle } from "@/lib/circles";
-import { notFound } from "next/navigation";
+import { replacedSlugPath } from "@/lib/slug";
+import { notFound, redirect } from "next/navigation";
 
 export default async function EditCirclePage({
   params,
@@ -17,5 +18,7 @@ export default async function EditCirclePage({
     );
   }
   if (!circle) notFound();
+  const canonical = replacedSlugPath("circles", id, circle.slug, "/edit");
+  if (canonical) redirect(canonical);
   return <CircleForm circle={circle} />;
 }

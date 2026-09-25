@@ -1,6 +1,7 @@
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
 import { parseLabels } from "@/lib/labels";
+import { isMissingSlugColumn, isUuid } from "@/lib/slug";
 
 export type EventImage = {
   id: string;
@@ -34,6 +35,7 @@ export type EventRow = {
   website_url?: string | null;
   parking_text?: string | null;
   created_by?: string | null;
+  slug?: string | null;
 };
 
 export type EventWithPlace = EventRow & {
@@ -42,6 +44,8 @@ export type EventWithPlace = EventRow & {
   pinLat: number | null;
   pinLng: number | null;
   pinAddress: string | null;
+  venueSlug: string | null;
+  circleSlug: string | null;
   images: EventImage[];
   files: Attachment[];
 };
@@ -52,6 +56,7 @@ type VenuePlace = {
   address: string | null;
   lat: number | null;
   lng: number | null;
+  slug: string | null;
 };
 
 function pinFields(event: EventRow, venue?: VenuePlace) {
@@ -97,10 +102,14 @@ async function venuesById(ids: string[]) {
   if (ids.length === 0) return {} as Record<string, VenuePlace>;
 
   const supabase = createSupabaseClient();
-  const full = await supabase
+  const withSlug = await supabase
     .from("venues")
-    .select("id, name, region, address, lat, lng")
+    .select("id, slug, name, region, address, lat, lng")
     .in("id", ids);
+  const full =
+    withSlug.error && isMissingSlugColumn(withSlug.error.message)
+      ? await supabase.from("venues").select("id, name, region, address, lat, lng").in("id", ids)
+      : withSlug;
 
   if (!full.error) {
     return Object.fromEntries(
@@ -112,6 +121,7 @@ async function venuesById(ids: string[]) {
           address: venue.address,
           lat: venue.lat,
           lng: venue.lng,
+          slug: (venue as { slug?: string | null }).slug ?? null,
         } satisfies VenuePlace,
       ]),
     );
@@ -131,6 +141,7 @@ async function venuesById(ids: string[]) {
           address: venue.address,
           lat: null,
           lng: null,
+          slug: null,
         } satisfies VenuePlace,
       ]),
     );
@@ -146,18 +157,29 @@ async function venuesById(ids: string[]) {
         address: null,
         lat: null,
         lng: null,
+        slug: null,
       } satisfies VenuePlace,
     ]),
   );
 }
 
 async function circlesById(ids: string[]) {
-  if (ids.length === 0) return {} as Record<string, { name: string }>;
+  if (ids.length === 0) return {} as Record<string, { name: string; slug: string | null }>;
 
   const supabase = createSupabaseClient();
-  const { data } = await supabase.from("circles").select("id, name").in("id", ids);
+  const withSlug = await supabase.from("circles").select("id, slug, name").in("id", ids);
+  const result =
+    withSlug.error && isMissingSlugColumn(withSlug.error.message)
+      ? await supabase.from("circles").select("id, name").in("id", ids)
+      : withSlug;
+  const { data } = result;
 
-  return Object.fromEntries((data ?? []).map((circle) => [circle.id, { name: circle.name }]));
+  return Object.fromEntries(
+    (data ?? []).map((circle) => [
+      circle.id,
+      { name: circle.name, slug: (circle as { slug?: string | null }).slug ?? null },
+    ]),
+  );
 }
 
 export async function getEvents() {
@@ -188,6 +210,8 @@ export async function getEvents() {
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),
+      venueSlug: event.venue_id ? (venues[event.venue_id]?.slug ?? null) : null,
+      circleSlug: event.circle_id ? (circles[event.circle_id]?.slug ?? null) : null,
       images: sortedImages(event.event_images),
       files: [],
     })),
@@ -197,16 +221,17 @@ export async function getEvents() {
 
 export async function getEvent(id: string) {
   const supabase = createSupabaseClient();
+  const column = isUuid(id) ? "id" : "slug";
   let { data, error } = await supabase
     .from("events")
     .select("*, event_images(id, url, sort_order), event_files(id, url, label, sort_order)")
-    .eq("id", id)
+    .eq(column, id)
     .maybeSingle();
   if (error) {
     ({ data, error } = await supabase
       .from("events")
       .select("*, event_images(id, url, sort_order)")
-      .eq("id", id)
+      .eq(column, id)
       .maybeSingle());
   }
 
@@ -231,6 +256,8 @@ export async function getEvent(id: string) {
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),
+      venueSlug: event.venue_id ? (venues[event.venue_id]?.slug ?? null) : null,
+      circleSlug: event.circle_id ? (circles[event.circle_id]?.slug ?? null) : null,
       images: sortedImages(event.event_images),
       files: sortedAttachments(event.event_files),
     } satisfies EventWithPlace,

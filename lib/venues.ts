@@ -1,4 +1,5 @@
 import { isMissingCoordColumn } from "@/lib/geo";
+import { isMissingSlugColumn, isUuid, withoutSlugColumn } from "@/lib/slug";
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
 import { parseLabels } from "@/lib/labels";
@@ -43,6 +44,7 @@ export type VenueRow = {
   sns_x?: string | null;
   sns_line?: string | null;
   created_by?: string | null;
+  slug?: string | null;
 };
 
 export type VenueWithImages = VenueRow & {
@@ -57,7 +59,7 @@ function sortedImages(images: VenueImage[] | null) {
 }
 
 const VENUE_LIST_COLUMNS =
-  "id, name, address, region, kind, lat, lng, created_by, venue_images(id, url, sort_order)";
+  "id, slug, name, address, region, kind, lat, lng, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_LIST_COLUMNS_NO_COORDS =
   "id, name, address, region, kind, created_by, venue_images(id, url, sort_order)";
@@ -66,10 +68,10 @@ const VENUE_LIST_COLUMNS_FALLBACK =
   "id, name, address, region, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_DETAIL_COLUMNS =
-  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order), venue_files(id, url, label, sort_order)";
+  "id, slug, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order), venue_files(id, url, label, sort_order)";
 
 const VENUE_DETAIL_COLUMNS_NO_FILES =
-  "id, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order)";
+  "id, slug, name, description, address, region, kind, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order)";
 
 const VENUE_DETAIL_COLUMNS_FALLBACK =
   "id, name, description, address, region, phone, hours_text, holiday_text, fee_text, access_transit, access_car, parking_text, payment_text, website_url, sns_instagram, sns_x, sns_line, created_by, venue_images(id, url, sort_order)";
@@ -101,10 +103,18 @@ async function orderVenues(columns: string) {
   return { data, error };
 }
 
+async function orderVenuesFlexible(columns: string) {
+  let result = await orderVenues(columns);
+  if (result.error && isMissingSlugColumn(result.error.message)) {
+    result = await orderVenues(withoutSlugColumn(columns));
+  }
+  return result;
+}
+
 export async function getVenues() {
-  let { data, error } = await orderVenues(VENUE_LIST_COLUMNS);
+  let { data, error } = await orderVenuesFlexible(VENUE_LIST_COLUMNS);
   if (error && isMissingCoordColumn(error.message)) {
-    ({ data, error } = await orderVenues(VENUE_LIST_COLUMNS_NO_COORDS));
+    ({ data, error } = await orderVenuesFlexible(VENUE_LIST_COLUMNS_NO_COORDS));
   }
   if (error) {
     ({ data, error } = await orderVenues(VENUE_LIST_COLUMNS_FALLBACK));
@@ -119,26 +129,27 @@ export async function getVenues() {
   return { venues, error: null };
 }
 
-export async function getVenue(id: string) {
+async function queryVenue(columns: string, key: string) {
   const supabase = createSupabaseClient();
-  let { data, error } = await supabase
-    .from("venues")
-    .select(VENUE_DETAIL_COLUMNS)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) {
-    ({ data, error } = await supabase
+  const column = isUuid(key) ? "id" : "slug";
+  let result = await supabase.from("venues").select(columns).eq(column, key).maybeSingle();
+  if (result.error && isMissingSlugColumn(result.error.message) && column === "id") {
+    result = await supabase
       .from("venues")
-      .select(VENUE_DETAIL_COLUMNS_NO_FILES)
-      .eq("id", id)
-      .maybeSingle());
+      .select(withoutSlugColumn(columns))
+      .eq("id", key)
+      .maybeSingle();
+  }
+  return result;
+}
+
+export async function getVenue(id: string) {
+  let { data, error } = await queryVenue(VENUE_DETAIL_COLUMNS, id);
+  if (error) {
+    ({ data, error } = await queryVenue(VENUE_DETAIL_COLUMNS_NO_FILES, id));
   }
   if (error) {
-    ({ data, error } = await supabase
-      .from("venues")
-      .select(VENUE_DETAIL_COLUMNS_FALLBACK)
-      .eq("id", id)
-      .maybeSingle());
+    ({ data, error } = await queryVenue(VENUE_DETAIL_COLUMNS_FALLBACK, id));
   }
 
   if (error) return { venue: null, error };

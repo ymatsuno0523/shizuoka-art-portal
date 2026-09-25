@@ -1,11 +1,13 @@
 import { createSupabaseClient } from "@/lib/supabase";
 import { sortedAttachments, type Attachment } from "@/lib/files";
 import { parseLabels } from "@/lib/labels";
+import { isMissingSlugColumn, isUuid, withoutSlugColumn } from "@/lib/slug";
 
 export const ORG_KINDS = [
   "サークル",
   "教室・スクール",
   "企業・事務所",
+  "行政・財団",
   "その他",
 ] as const;
 
@@ -33,6 +35,7 @@ export type CircleRow = {
   sns_x?: string | null;
   sns_line?: string | null;
   created_by?: string | null;
+  slug?: string | null;
 };
 
 export type CircleWithImages = CircleRow & {
@@ -47,13 +50,13 @@ function sortedImages(images: CircleImage[] | null) {
 }
 
 const CIRCLE_LIST_COLUMNS =
-  "id, name, description, address, region, genre, kind, created_by, circle_images(id, url, sort_order)";
+  "id, slug, name, description, address, region, genre, kind, created_by, circle_images(id, url, sort_order)";
 
 const CIRCLE_DETAIL_COLUMNS =
-  "id, name, description, address, region, genre, kind, representative, phone, email, website_url, sns_instagram, sns_x, sns_line, created_by, circle_images(id, url, sort_order), circle_files(id, url, label, sort_order)";
+  "id, slug, name, description, address, region, genre, kind, representative, phone, email, website_url, sns_instagram, sns_x, sns_line, created_by, circle_images(id, url, sort_order), circle_files(id, url, label, sort_order)";
 
 const CIRCLE_DETAIL_COLUMNS_FALLBACK =
-  "id, name, description, address, region, genre, kind, representative, phone, email, website_url, sns_instagram, sns_x, sns_line, created_by, circle_images(id, url, sort_order)";
+  "id, slug, name, description, address, region, genre, kind, representative, phone, email, website_url, sns_instagram, sns_x, sns_line, created_by, circle_images(id, url, sort_order)";
 
 function toCircle(
   row: CircleRow & {
@@ -71,37 +74,52 @@ function toCircle(
 
 export async function getCircles() {
   const supabase = createSupabaseClient();
-  const select = () => supabase.from("circles").select(CIRCLE_LIST_COLUMNS);
-  let { data, error } = await select().order("updated_at", { ascending: false });
-  if (error) {
-    ({ data, error } = await select().order("created_at", { ascending: false }));
-  }
-  if (error) {
-    ({ data, error } = await select().order("name"));
+  const load = async (columns: string) => {
+    const select = () => supabase.from("circles").select(columns);
+    let result = await select().order("updated_at", { ascending: false });
+    if (result.error) {
+      result = await select().order("created_at", { ascending: false });
+    }
+    if (result.error) {
+      result = await select().order("name");
+    }
+    return result;
+  };
+
+  let columns = CIRCLE_LIST_COLUMNS;
+  let { data, error } = await load(columns);
+  if (error && isMissingSlugColumn(error.message)) {
+    columns = withoutSlugColumn(columns);
+    ({ data, error } = await load(columns));
   }
 
   if (error) return { circles: [] as CircleWithImages[], error };
 
   const circles = (
-    (data ?? []) as (CircleRow & { circle_images: CircleImage[] | null })[]
+    (data ?? []) as unknown as (CircleRow & { circle_images: CircleImage[] | null })[]
   ).map(toCircle);
 
   return { circles, error: null };
 }
 
-export async function getCircle(id: string) {
+async function queryCircle(columns: string, key: string) {
   const supabase = createSupabaseClient();
-  let { data, error } = await supabase
-    .from("circles")
-    .select(CIRCLE_DETAIL_COLUMNS)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) {
-    ({ data, error } = await supabase
+  const column = isUuid(key) ? "id" : "slug";
+  let result = await supabase.from("circles").select(columns).eq(column, key).maybeSingle();
+  if (result.error && isMissingSlugColumn(result.error.message) && column === "id") {
+    result = await supabase
       .from("circles")
-      .select(CIRCLE_DETAIL_COLUMNS_FALLBACK)
-      .eq("id", id)
-      .maybeSingle());
+      .select(withoutSlugColumn(columns))
+      .eq("id", key)
+      .maybeSingle();
+  }
+  return result;
+}
+
+export async function getCircle(id: string) {
+  let { data, error } = await queryCircle(CIRCLE_DETAIL_COLUMNS, id);
+  if (error) {
+    ({ data, error } = await queryCircle(CIRCLE_DETAIL_COLUMNS_FALLBACK, id));
   }
 
   if (error) return { circle: null, error };

@@ -138,7 +138,7 @@ set kind = coalesce(
         case
           when x in ('スクール', '教室') then '教室・スクール'
           when x in ('企業', '企業・スタジオ') then '企業・事務所'
-          when x in ('サークル', '教室・スクール', '企業・事務所', 'その他') then x
+          when x in ('サークル', '教室・スクール', '企業・事務所', '行政・財団', 'その他') then x
           else null
         end as mapped
       from unnest(coalesce(kind, array[]::text[])) as x
@@ -201,6 +201,7 @@ alter table public.circles
       'サークル',
       '教室・スクール',
       '企業・事務所',
+      '行政・財団',
       'その他'
     ]::text[]
   );

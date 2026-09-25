@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatEventDate } from "@/lib/events";
+import { contentHref } from "@/lib/slug";
 
 type CalendarEvent = {
   id: string;
+  slug?: string | null;
   title: string;
   start_at: string;
   end_at: string | null;
@@ -169,7 +171,7 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
             {selectedEvents.map((event) => (
               <li key={event.id}>
                 <Link
-                  href={`/events/${event.id}`}
+                  href={contentHref("events", event)}
                   className="press-card block rounded-[8px] border border-zinc-200 px-3 py-2 dark:border-zinc-800"
                 >
                   <p className="text-xs text-zinc-500">

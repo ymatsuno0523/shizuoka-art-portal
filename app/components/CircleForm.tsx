@@ -8,10 +8,12 @@ import { createBrowserSupabase } from "@/lib/supabase-browser";
 import LabelChecks from "@/app/components/LabelChecks";
 import ImageFields from "@/app/components/ImageFields";
 import PdfFields from "@/app/components/PdfFields";
+import SlugField from "@/app/components/SlugField";
 import type { CircleImage, CircleRow } from "@/lib/circles";
 import { REGIONS } from "@/lib/event-form";
 import { orgKindOptions, regionOptions } from "@/lib/event-payload";
 import { parseLabels } from "@/lib/labels";
+import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
 import {
   MAX_ATTACHMENTS,
   saveAttachments,
@@ -53,6 +55,7 @@ export default function CircleForm({
   const [phone, setPhone] = useState(circle?.phone ?? "");
   const [email, setEmail] = useState(circle?.email ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(circle?.website_url ?? "");
+  const [slugText, setSlugText] = useState(circle?.slug ?? "");
   const [sns, setSns] = useState({
     sns_instagram: circle?.sns_instagram ?? "",
     sns_x: circle?.sns_x ?? "",
@@ -74,7 +77,7 @@ export default function CircleForm({
   }
 
   if (!user) {
-    const next = isEdit && circle ? `/circles/${circle.id}/edit` : "/circles/new";
+    const next = isEdit && circle ? contentHref("circles", circle, "/edit") : "/circles/new";
     return (
       <main className="px-4 py-6">
         <h1 className="mb-3 text-lg font-bold">
@@ -97,7 +100,7 @@ export default function CircleForm({
     return (
       <main className="px-4 py-6">
         <p className="text-sm text-zinc-600">この団体を編集する権限がありません。</p>
-        <Link href={`/circles/${circle.id}`} className="mt-3 inline-block text-sm text-zinc-500">
+        <Link href={contentHref("circles", circle)} className="mt-3 inline-block text-sm text-zinc-500">
           詳細へ戻る
         </Link>
       </main>
@@ -129,6 +132,12 @@ export default function CircleForm({
       return;
     }
 
+    const parsedSlug = parseSlug(slugText);
+    if (parsedSlug.error) {
+      setError(parsedSlug.error);
+      return;
+    }
+
     const payload = {
       name: name.trim(),
       kind,
@@ -143,11 +152,12 @@ export default function CircleForm({
       sns_instagram: emptyToNull(sns.sns_instagram),
       sns_x: emptyToNull(sns.sns_x),
       sns_line: emptyToNull(sns.sns_line),
+      slug: parsedSlug.slug,
     };
 
     setSubmitting(true);
     const supabase = createBrowserSupabase();
-    const result =
+    let result =
       isEdit && circle
         ? await supabase.from("circles").update(payload).eq("id", circle.id).select("id").single()
         : await supabase
@@ -159,16 +169,42 @@ export default function CircleForm({
             })
             .select("id")
             .single();
+    if (result.error && isMissingSlugColumn(result.error.message)) {
+      if (parsedSlug.slug) {
+        setSubmitting(false);
+        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        return;
+      }
+      const body = withoutSlug(payload);
+      result =
+        isEdit && circle
+          ? await supabase.from("circles").update(body).eq("id", circle.id).select("id").single()
+          : await supabase
+              .from("circles")
+              .insert({
+                ...body,
+                created_by: user.id,
+                created_at: new Date().toISOString(),
+              })
+              .select("id")
+              .single();
+    }
 
     if (result.error || !result.data) {
       setSubmitting(false);
-      setError(
-        `${result.error?.message ?? "保存に失敗しました。"} supabase/multi-labels.sql を実行したか確認してください。`,
-      );
+      const message = result.error?.message ?? "保存に失敗しました。";
+      const slugHint = slugSaveHint(message);
+      const hint = slugHint
+        ? slugHint
+        : /circles_kind_check/.test(message)
+          ? `${message} supabase/circle-admin-kind.sql を実行したか確認してください。`
+          : `${message} supabase/multi-labels.sql を実行したか確認してください。`;
+      setError(hint);
       return;
     }
 
     const circleId = result.data.id;
+    const savedPath = contentHref("circles", { id: circleId, slug: parsedSlug.slug });
 
     try {
       const removed = (circle?.images ?? []).filter(
@@ -203,7 +239,7 @@ export default function CircleForm({
       setError(
         `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 団体は保存されています。`,
       );
-      replaceAppHref(router, `/circles/${circleId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
@@ -222,12 +258,12 @@ export default function CircleForm({
       setError(
         `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
       );
-      replaceAppHref(router, `/circles/${circleId}`);
+      replaceAppHref(router, savedPath);
       return;
     }
 
     setSubmitting(false);
-    replaceAppHref(router, `/circles/${circleId}`);
+    replaceAppHref(router, savedPath);
   }
 
   return (
@@ -374,12 +410,14 @@ export default function CircleForm({
           onPendingChange={setPendingPdfs}
         />
 
+        <SlugField value={slugText} onChange={setSlugText} />
+
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="!mt-6 w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
         >
           {submitting ? "保存中..." : isEdit ? "変更を保存" : "登録する"}
         </button>

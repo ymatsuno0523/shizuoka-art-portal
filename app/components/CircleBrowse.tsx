@@ -5,6 +5,7 @@ import { CategoryChips } from "@/app/components/CategoryChip";
 import MineGate from "@/app/components/MineGate";
 import NoImage from "@/app/components/NoImage";
 import type { CircleWithImages } from "@/lib/circles";
+import { contentHref } from "@/lib/slug";
 
 export default function CircleBrowse({
   circles,
@@ -29,7 +30,7 @@ export default function CircleBrowse({
             {items.map((circle) => (
               <li key={circle.id}>
                 <Link
-                  href={`/circles/${circle.id}`}
+                  href={contentHref("circles", circle)}
                   className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                 >
                   {circle.images[0] ? (

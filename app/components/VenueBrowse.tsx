@@ -6,6 +6,7 @@ import MineGate from "@/app/components/MineGate";
 import NoImage from "@/app/components/NoImage";
 import PlacesMap from "@/app/components/PlacesMap";
 import type { MapPinSource } from "@/lib/geo";
+import { contentHref } from "@/lib/slug";
 import type { VenueWithImages } from "@/lib/venues";
 
 export default function VenueBrowse({
@@ -32,7 +33,7 @@ export default function VenueBrowse({
         const pins: MapPinSource[] = items.map((venue) => ({
           id: venue.id,
           title: venue.name,
-          href: `/venues/${venue.id}`,
+          href: contentHref("venues", venue),
           subtitle: [venue.region, venue.address].filter(Boolean).join(" · "),
           lat: venue.lat ?? null,
           lng: venue.lng ?? null,
@@ -45,7 +46,7 @@ export default function VenueBrowse({
             {items.map((venue) => (
               <li key={venue.id}>
                 <Link
-                  href={`/venues/${venue.id}`}
+                  href={contentHref("venues", venue)}
                   className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                 >
                   {venue.images[0] ? (
