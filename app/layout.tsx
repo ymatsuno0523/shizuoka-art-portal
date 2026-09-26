@@ -17,16 +17,8 @@ const notoSansJp = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Shizuoka Art Portal",
-  description: "静岡県内のアート・イラスト情報",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
-  },
+  title: "Shizuoka Art Portal | 静岡アートポータル",
+  description: "静岡県内のアート・イラスト・展覧会・ワークショップ情報",
 };
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
