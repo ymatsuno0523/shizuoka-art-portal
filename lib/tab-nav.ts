@@ -127,14 +127,27 @@ export function markEventsUnder() {
 }
 
 export function injectEventsUnderlay(currentUrl: string) {
-  const state = historyState();
-  window.history.replaceState({ ...state, [EVENTS_UNDER]: true }, "", "/events");
-  window.history.pushState({ ...state, [EVENTS_UNDER]: true }, "", currentUrl);
   markEventsRoot();
   writeStack(["/events", currentUrl]);
 }
 
+let historySessionReady = false;
+
+function resetStackIfColdLoad() {
+  if (historySessionReady) return;
+  historySessionReady = true;
+  const nav = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  if (nav?.type === "navigate" || nav?.type === "reload") {
+    sessionStorage.removeItem(EVENTS_ROOT_KEY);
+    sessionStorage.removeItem(PENDING_TAB_KEY);
+    writeStack([]);
+  }
+}
+
 export function syncTabHistory(pathname: string, search: string) {
+  resetStackIfColdLoad();
   const url = pageUrl(pathname, search);
 
   if (pathname === "/events") markEventsRoot();

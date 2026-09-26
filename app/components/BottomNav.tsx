@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  isEventsRootUrl,
-  isMainTabRoot,
-  isTabRootUrl,
-  mainTabFromPath,
-  setNavMode,
-  setPendingTab,
-  stackDeltaTo,
-  type MainTab,
-} from "@/lib/tab-nav";
+import { isMainTabRoot, mainTabFromPath, setNavMode, type MainTab } from "@/lib/tab-nav";
 
 const items = [
   { href: "/events", tab: "events" as const, label: "イベント", icon: CalendarIcon },
@@ -19,11 +10,6 @@ const items = [
   { href: "/circles", tab: "circles" as const, label: "団体", icon: CircleIcon },
   { href: "/mypage", tab: "mypage" as const, label: "マイページ", icon: UserIcon },
 ] as const;
-
-function goDelta(delta: number) {
-  setNavMode("back");
-  window.history.go(-delta);
-}
 
 function openTab(
   router: { push: (href: string) => void; replace: (href: string) => void },
@@ -36,42 +22,9 @@ function openTab(
 
   if (from === target && fromRoot) return;
 
-  if (from === target) {
-    const delta = stackDeltaTo((url) => isTabRootUrl(url, target));
-    if (delta && delta > 0) goDelta(delta);
-    else {
-      setNavMode("replace");
-      router.replace(href);
-    }
-    return;
-  }
-
-  if (target === "events") {
-    const delta = stackDeltaTo(isEventsRootUrl);
-    if (delta && delta > 0) goDelta(delta);
-    else {
-      setNavMode("replace");
-      router.replace("/events");
-    }
-    return;
-  }
-
   if (from === "events" && fromRoot) {
     setNavMode("push");
     router.push(href);
-    return;
-  }
-
-  if (fromRoot) {
-    setNavMode("replace");
-    router.replace(href);
-    return;
-  }
-
-  const delta = stackDeltaTo(isEventsRootUrl);
-  if (delta && delta > 0) {
-    setPendingTab(href);
-    goDelta(delta);
     return;
   }
 
