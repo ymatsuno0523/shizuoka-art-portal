@@ -39,8 +39,10 @@ export type EventRow = {
 };
 
 export type EventWithPlace = EventRow & {
-  placeLabel: string;
+  placeLabel: string | null;
+  venueLinked: boolean;
   organizerLabel: string | null;
+  circleLinked: boolean;
   pinLat: number | null;
   pinLng: number | null;
   pinAddress: string | null;
@@ -80,22 +82,28 @@ function sortedImages(images: EventImage[] | null) {
   );
 }
 
-function placeLabel(
-  event: Pick<EventRow, "venue_id" | "location_text" | "region">,
+function resolvePlace(
+  event: Pick<EventRow, "venue_id" | "location_text">,
   venueName?: string | null,
 ) {
-  if (event.venue_id && venueName) return venueName;
-  if (event.location_text) return event.location_text;
-  if (event.region) return event.region;
-  return "場所未設定";
+  if (event.venue_id && venueName) {
+    return { placeLabel: venueName, venueLinked: true };
+  }
+  const text = event.location_text?.trim() || null;
+  return { placeLabel: text, venueLinked: false };
 }
 
-function organizerLabel(
+function resolveOrganizer(
   event: Pick<EventRow, "circle_id" | "organizer">,
   circleName?: string | null,
 ) {
-  if (event.circle_id && circleName) return circleName;
-  return event.organizer?.trim() || null;
+  if (event.circle_id && circleName) {
+    return { organizerLabel: circleName, circleLinked: true };
+  }
+  return {
+    organizerLabel: event.organizer?.trim() || null,
+    circleLinked: false,
+  };
 }
 
 async function venuesById(ids: string[]) {
@@ -204,9 +212,9 @@ export async function getEvents() {
       ...event,
       genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
-      placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
+      ...resolvePlace(event, event.venue_id ? venues[event.venue_id]?.name : null),
       ...pinFields(event, event.venue_id ? venues[event.venue_id] : undefined),
-      organizerLabel: organizerLabel(
+      ...resolveOrganizer(
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),
@@ -250,9 +258,9 @@ export async function getEvent(id: string) {
       ...event,
       genre: parseLabels(event.genre),
       region: event.region || (event.venue_id ? venues[event.venue_id]?.region ?? null : null),
-      placeLabel: placeLabel(event, event.venue_id ? venues[event.venue_id]?.name : null),
+      ...resolvePlace(event, event.venue_id ? venues[event.venue_id]?.name : null),
       ...pinFields(event, event.venue_id ? venues[event.venue_id] : undefined),
-      organizerLabel: organizerLabel(
+      ...resolveOrganizer(
         event,
         event.circle_id ? circles[event.circle_id]?.name : null,
       ),

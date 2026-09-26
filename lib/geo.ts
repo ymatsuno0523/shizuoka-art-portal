@@ -31,44 +31,8 @@ const SHIZUOKA_BOUNDS = {
   lngMax: 139.25,
 };
 
-const REGION_COORDS: Record<string, GeoPoint> = {
-  静岡市: { lat: 34.9756, lng: 138.3828 },
-  浜松市: { lat: 34.7108, lng: 137.7261 },
-  沼津市: { lat: 35.0956, lng: 138.8634 },
-  富士市: { lat: 35.1614, lng: 138.6764 },
-  富士宮市: { lat: 35.2222, lng: 138.6217 },
-  藤枝市: { lat: 34.8675, lng: 138.2575 },
-  焼津市: { lat: 34.867, lng: 138.323 },
-  島田市: { lat: 34.8364, lng: 138.1761 },
-  磐田市: { lat: 34.7181, lng: 137.8514 },
-  掛川市: { lat: 34.7686, lng: 138.0153 },
-  袋井市: { lat: 34.7503, lng: 137.925 },
-  御殿場市: { lat: 35.3086, lng: 138.9347 },
-  裾野市: { lat: 35.174, lng: 138.907 },
-  三島市: { lat: 35.1185, lng: 138.9185 },
-  湖西市: { lat: 34.7186, lng: 137.5317 },
-  菊川市: { lat: 34.7578, lng: 138.0842 },
-  御前崎市: { lat: 34.638, lng: 138.128 },
-  牧之原市: { lat: 34.74, lng: 138.2247 },
-  熱海市: { lat: 35.096, lng: 139.0715 },
-  伊東市: { lat: 34.9658, lng: 139.1019 },
-  下田市: { lat: 34.6794, lng: 138.9453 },
-  伊豆市: { lat: 34.9767, lng: 138.9467 },
-  伊豆の国市: { lat: 35.0278, lng: 138.9289 },
-  その他: SHIZUOKA_CENTER,
-};
-
 const GSI_ADDRESS_SEARCH = "https://msearch.gsi.go.jp/address-search/AddressSearch";
 const geocodeCache = new Map<string, GeoPoint>();
-
-function jitter(id: string, point: GeoPoint) {
-  let hash = 0;
-  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return {
-    lat: point.lat + (((hash % 17) - 8) * 0.004),
-    lng: point.lng + ((((hash >> 4) % 17) - 8) * 0.004),
-  };
-}
 
 function inShizuoka(lat: number, lng: number) {
   return (
@@ -141,44 +105,45 @@ export function isMissingCoordColumn(message: string) {
   return /schema cache|column/i.test(message) && /\blat\b|\blng\b/.test(message);
 }
 
-export function pinFromRegion(
-  id: string,
-  region: string | null,
-  extra: Omit<MapPin, "id" | "lat" | "lng">,
-): MapPin {
-  const base = (region && REGION_COORDS[region]) || SHIZUOKA_CENTER;
-  const point = jitter(id, base);
-  return { id, lat: point.lat, lng: point.lng, ...extra };
+/** 番地・丁目など、地図に出してよい粒度の住所か */
+export function isMappableAddress(address: string | null | undefined) {
+  const text = address?.normalize("NFKC").trim() ?? "";
+  if (!text) return false;
+  const compact = text.replace(/\s+/g, "");
+  return (
+    /[0-9０-９]+(丁目|番地|番|号)/.test(compact) ||
+    /[0-9０-９]+[-‐‑‒–—―ー－−][0-9０-９]/.test(compact)
+  );
 }
 
 function pinExtras(source: MapPinSource): Omit<MapPin, "id" | "lat" | "lng"> {
   return { title: source.title, href: source.href, subtitle: source.subtitle };
 }
 
-export function pinFromSource(source: MapPinSource): MapPin {
+export function pinFromSource(source: MapPinSource): MapPin | null {
+  if (!isMappableAddress(source.address)) return null;
   const lat = coord(source.lat);
   const lng = coord(source.lng);
   if (lat != null && lng != null && inShizuoka(lat, lng)) {
     return { id: source.id, lat, lng, ...pinExtras(source) };
   }
-  return pinFromRegion(source.id, source.region, pinExtras(source));
+  return null;
 }
 
-async function resolveMapPin(source: MapPinSource): Promise<MapPin> {
+async function resolveMapPin(source: MapPinSource): Promise<MapPin | null> {
+  if (!isMappableAddress(source.address)) return null;
   const lat = coord(source.lat);
   const lng = coord(source.lng);
   if (lat != null && lng != null && inShizuoka(lat, lng)) {
     return { id: source.id, lat, lng, ...pinExtras(source) };
   }
-  if (source.address?.trim()) {
-    const point = await geocodeAddress(source.address, source.region);
-    if (point) return { id: source.id, ...point, ...pinExtras(source) };
-  }
-  return pinFromRegion(source.id, source.region, pinExtras(source));
+  const point = await geocodeAddress(source.address, source.region);
+  if (point) return { id: source.id, ...point, ...pinExtras(source) };
+  return null;
 }
 
 export async function resolveMapPins(sources: MapPinSource[]) {
-  const results = new Array<MapPin>(sources.length);
+  const results = new Array<MapPin | null>(sources.length);
   let index = 0;
 
   async function worker() {
@@ -191,5 +156,5 @@ export async function resolveMapPins(sources: MapPinSource[]) {
 
   const workers = Math.min(4, sources.length);
   await Promise.all(Array.from({ length: workers }, () => worker()));
-  return results;
+  return results.filter((pin): pin is MapPin => pin != null);
 }

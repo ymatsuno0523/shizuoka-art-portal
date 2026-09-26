@@ -24,7 +24,7 @@ import {
   type Attachment,
   type PendingAttachment,
 } from "@/lib/files";
-import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { coordinatesFor, isMappableAddress, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
 import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import {
@@ -62,7 +62,13 @@ export default function EventForm({
   const [venueOptions, setVenueOptions] = useState(venues);
   const [venueId, setVenueId] = useState(event?.venue_id ?? "");
   const [locationText, setLocationText] = useState(event?.location_text ?? "");
-  const [address, setAddress] = useState(event?.address ?? "");
+  const [address, setAddress] = useState(() => {
+    if (event?.venue_id) {
+      const venue = venues.find((item) => item.id === event.venue_id);
+      if (venue?.address?.trim()) return venue.address;
+    }
+    return event?.address ?? "";
+  });
   const [region, setRegion] = useState(event?.region || regionOptions()[0]);
   const [genre, setGenre] = useState(parseLabels(event?.genre));
   const [orgMode, setOrgMode] = useState<"org" | "text">(initialOrgMode(event, orgs));
@@ -90,11 +96,16 @@ export default function EventForm({
     let cancelled = false;
     void supabase
       .from("venues")
-      .select("id, name, region")
+      .select("id, name, region, address")
       .order("name")
       .then(({ data }) => {
         if (cancelled || !data) return;
         setVenueOptions(data);
+        if (placeMode === "venue" && venueId) {
+          const venue = data.find((item) => item.id === venueId);
+          if (venue?.address?.trim()) setAddress(venue.address);
+          if (venue?.region) setRegion(venue.region);
+        }
       });
     return () => {
       cancelled = true;
@@ -163,11 +174,17 @@ export default function EventForm({
 
     setSubmitting(true);
     const emptyToNull = (value: string) => value.trim() || null;
+    const selectedVenue =
+      placeMode === "venue" && venueId
+        ? venueOptions.find((item) => item.id === venueId)
+        : null;
     const locationValue = placeMode === "text" ? emptyToNull(locationText) : null;
-    const addressValue = placeMode === "text" ? emptyToNull(address) : null;
-    const coords = addressValue
-      ? await coordinatesFor(addressValue, region)
-      : { lat: null, lng: null };
+    // 登録施設を選んでいるときは施設側の住所・座標を使う
+    const addressValue = selectedVenue ? null : emptyToNull(address);
+    const coords =
+      addressValue && isMappableAddress(addressValue)
+        ? await coordinatesFor(addressValue, region)
+        : { lat: null, lng: null };
     const payload = {
       title: title.trim(),
       description: emptyToNull(description),
@@ -387,7 +404,12 @@ export default function EventForm({
                   const nextId = e.target.value;
                   setVenueId(nextId);
                   const venue = venueOptions.find((item) => item.id === nextId);
-                  if (venue?.region) setRegion(venue.region);
+                  if (venue) {
+                    if (venue.region) setRegion(venue.region);
+                    setAddress(venue.address?.trim() ?? "");
+                  } else {
+                    setAddress("");
+                  }
                 }}
                 className={inputClass}
               >
@@ -400,27 +422,28 @@ export default function EventForm({
               </select>
             </div>
           ) : (
-            <div className="space-y-2">
-              <label className="block">
-                会場名（任意）
-                <input
-                  value={locationText}
-                  onChange={(e) => setLocationText(e.target.value)}
-                  placeholder="例: ○○ホール"
-                  className={`${inputClass} mt-1`}
-                />
-              </label>
-              <label className="block">
-                住所（任意）
-                <input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="例: 浜松市中央区中央1-1"
-                  className={`${inputClass} mt-1`}
-                />
-              </label>
-            </div>
+            <label className="block">
+              会場名（任意）
+              <input
+                value={locationText}
+                onChange={(e) => setLocationText(e.target.value)}
+                placeholder="例: ○○ホール"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
           )}
+          <label className="block">
+            住所（任意）
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="例: 浜松市中央区中央1-1"
+              readOnly={placeMode === "venue" && Boolean(venueId)}
+              className={`${inputClass} mt-1 ${
+                placeMode === "venue" && venueId ? "bg-zinc-100 dark:bg-zinc-900" : ""
+              }`}
+            />
+          </label>
         </fieldset>
 
         <label className="block text-sm">

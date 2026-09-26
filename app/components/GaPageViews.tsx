@@ -14,18 +14,25 @@ declare global {
 export default function GaPageViews({ gaId }: { gaId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!ready || typeof window.gtag !== "function") return;
-    const search = searchParams.toString();
+
     const pagePath = search ? `${pathname}?${search}` : pathname;
-    window.gtag("event", "page_view", {
-      page_path: pagePath,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
-  }, [ready, pathname, searchParams]);
+    // SPA では config の page_path 更新がページ単位の計測になる
+    // title は遷移直後に古いことがあるので、少し遅らせる
+    const timer = window.setTimeout(() => {
+      window.gtag?.("config", gaId, {
+        page_path: pagePath,
+        page_title: document.title,
+        page_location: window.location.href,
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [ready, pathname, search, gaId]);
 
   return (
     <>

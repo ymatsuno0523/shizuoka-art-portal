@@ -11,10 +11,13 @@ type CalendarEvent = {
   title: string;
   start_at: string;
   end_at: string | null;
-  placeLabel: string;
+  placeLabel: string | null;
 };
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+/** マップ選択色と同系。継続は通常より一段控えめでよいが、色の説明は揃える */
+const ONGOING_DOT = "#db7e45";
+const ONGOING_MIN_DAYS = 7;
 
 function tokyoParts(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -55,6 +58,10 @@ function eventDayKeys(startAt: string, endAt: string | null) {
   return keys;
 }
 
+function isOngoingEvent(event: CalendarEvent) {
+  return eventDayKeys(event.start_at, event.end_at).length >= ONGOING_MIN_DAYS;
+}
+
 function monthCells(year: number, month: number) {
   const startWeekday = new Date(
     `${year}-${String(month).padStart(2, "0")}-01T00:00:00+09:00`,
@@ -65,6 +72,14 @@ function monthCells(year: number, month: number) {
   for (let day = 1; day <= daysInMonth; day += 1) cells.push(day);
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
+}
+
+function dayMark(
+  dayEvents: CalendarEvent[],
+): "short" | "ongoing" | null {
+  if (dayEvents.length === 0) return null;
+  if (dayEvents.some((event) => !isOngoingEvent(event))) return "short";
+  return "ongoing";
 }
 
 export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
@@ -128,7 +143,7 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
         {cells.map((day, index) => {
           if (!day) return <div key={`empty-${index}`} />;
           const key = ymdKey(cursor.year, cursor.month, day);
-          const hasEvents = (eventsByDay.get(key)?.length ?? 0) > 0;
+          const mark = dayMark(eventsByDay.get(key) ?? []);
           const isSelected = selectedKey === key;
           const isToday =
             cursor.year === today.year &&
@@ -141,24 +156,47 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
               type="button"
               onClick={() => setSelectedKey(key)}
               className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm ${
+                isSelected && !isToday ? "bg-zinc-100 dark:bg-zinc-800" : ""
+              } ${
                 isToday
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                   : ""
               }`}
             >
               {day}
-              {hasEvents ? (
+              {mark ? (
                 <span
                   className={`pointer-events-none absolute bottom-0 left-1/2 h-[6px] w-[6px] -translate-x-1/2 rounded-full ${
-                    isToday
-                      ? "bg-white dark:bg-zinc-900"
-                      : "bg-zinc-900 dark:bg-zinc-100"
+                    mark === "short"
+                      ? isToday
+                        ? "bg-white dark:bg-zinc-900"
+                        : "bg-zinc-900 dark:bg-zinc-100"
+                      : ""
                   }`}
+                  style={
+                    mark === "ongoing"
+                      ? { backgroundColor: isToday ? "#f3d2b8" : ONGOING_DOT }
+                      : undefined
+                  }
                 />
               ) : null}
             </button>
           );
         })}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-[6px] w-[6px] rounded-full bg-zinc-900 dark:bg-zinc-100" />
+          通常のイベント
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="h-[6px] w-[6px] rounded-full"
+            style={{ backgroundColor: ONGOING_DOT }}
+          />
+          1週間以上の継続イベント
+        </span>
       </div>
 
       <div className="mt-5">
@@ -168,23 +206,38 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
           <p className="text-sm text-zinc-500">この日のイベントはありません。</p>
         ) : (
           <ul className="space-y-2">
-            {selectedEvents.map((event) => (
-              <li key={event.id}>
-                <Link
-                  href={contentHref("events", event)}
-                  className="press-card block rounded-[8px] border border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                >
-                  <p className="text-xs text-zinc-500">
-                    {formatEventDate(event.start_at)}
-                    {event.end_at ? ` 〜 ${formatEventDate(event.end_at)}` : null}
-                  </p>
-                  <p className="mt-0.5 font-semibold">{event.title}</p>
-                  <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
-                    {event.placeLabel}
-                  </p>
-                </Link>
-              </li>
-            ))}
+            {selectedEvents.map((event) => {
+              const ongoing = isOngoingEvent(event);
+              return (
+                <li key={event.id}>
+                  <Link
+                    href={contentHref("events", event)}
+                    className="press-card block rounded-[8px] border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs text-zinc-500">
+                        {formatEventDate(event.start_at)}
+                        {event.end_at ? ` 〜 ${formatEventDate(event.end_at)}` : null}
+                      </p>
+                      {ongoing ? (
+                        <span
+                          className="inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold leading-none text-white"
+                          style={{ backgroundColor: ONGOING_DOT }}
+                        >
+                          継続
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-0.5 font-semibold">{event.title}</p>
+                    {event.placeLabel ? (
+                      <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
+                        {event.placeLabel}
+                      </p>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

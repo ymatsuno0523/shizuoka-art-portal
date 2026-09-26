@@ -66,6 +66,7 @@ export type VenueOption = {
   id: string;
   name: string;
   region: string | null;
+  address?: string | null;
 };
 
 export type OrgOption = {

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function NewEventPage() {
   const supabase = createSupabaseClient();
   const [{ data: venues }, { data: orgs }] = await Promise.all([
-    supabase.from("venues").select("id, name, region").order("name"),
+    supabase.from("venues").select("id, name, region, address").order("name"),
     supabase.from("circles").select("id, name, kind").order("name"),
   ]);
 

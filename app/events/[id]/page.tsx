@@ -60,39 +60,49 @@ export default async function EventDetailPage({
         <InfoRow label="開催日" value={dateLabel} />
         <InfoRow label="開催時間" value={event.time_text} />
         <InfoRow label="補足" value={event.schedule_note} />
-        {event.venue_id ? (
-          <div className={infoGridClass}>
-            <dt className="text-zinc-500">会場</dt>
-            <dd>
-              <Link
-                href={contentHref("venues", { id: event.venue_id, slug: event.venueSlug })}
-                className="underline"
-              >
-                {event.placeLabel}
-              </Link>
-            </dd>
-          </div>
-        ) : (
-          <InfoRow label="会場" value={event.placeLabel} />
-        )}
+        {event.placeLabel ? (
+          event.venueLinked ? (
+            <div className={infoGridClass}>
+              <dt className="text-zinc-500">会場</dt>
+              <dd>
+                <Link
+                  href={contentHref("venues", {
+                    id: event.venue_id!,
+                    slug: event.venueSlug,
+                  })}
+                  className="underline"
+                >
+                  {event.placeLabel}
+                </Link>
+              </dd>
+            </div>
+          ) : (
+            <InfoRow label="会場" value={event.placeLabel} />
+          )
+        ) : null}
         <InfoRow label="住所" value={event.pinAddress} />
         <InfoRow label="地域" value={event.pinAddress?.trim() ? null : event.region} />
         <InfoRow label="料金" value={event.fee_text} />
-        {event.circle_id && event.organizerLabel ? (
-          <div className={infoGridClass}>
-            <dt className="text-zinc-500">主催</dt>
-            <dd>
-              <Link
-                href={contentHref("circles", { id: event.circle_id, slug: event.circleSlug })}
-                className="underline"
-              >
-                {event.organizerLabel}
-              </Link>
-            </dd>
-          </div>
-        ) : (
-          <InfoRow label="主催" value={event.organizerLabel} />
-        )}
+        {event.organizerLabel ? (
+          event.circleLinked ? (
+            <div className={infoGridClass}>
+              <dt className="text-zinc-500">主催</dt>
+              <dd>
+                <Link
+                  href={contentHref("circles", {
+                    id: event.circle_id!,
+                    slug: event.circleSlug,
+                  })}
+                  className="underline"
+                >
+                  {event.organizerLabel}
+                </Link>
+              </dd>
+            </div>
+          ) : (
+            <InfoRow label="主催" value={event.organizerLabel} />
+          )
+        ) : null}
         <InfoRow label="共催・後援" value={event.support_text} />
         <InfoRow label="問い合わせ" value={event.contact_name} />
         <InfoRow label="電話" value={event.contact_phone} />

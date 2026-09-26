@@ -18,7 +18,7 @@ import {
   type Attachment,
   type PendingAttachment,
 } from "@/lib/files";
-import { coordinatesFor, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
+import { coordinatesFor, isMappableAddress, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
 import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import { SNS_LINKS } from "@/lib/sns";
@@ -145,7 +145,10 @@ export default function VenueForm({
 
     setSubmitting(true);
     const addressValue = emptyToNull(address);
-    const coords = await coordinatesFor(addressValue, region);
+    const coords =
+      addressValue && isMappableAddress(addressValue)
+        ? await coordinatesFor(addressValue, region)
+        : { lat: null, lng: null };
     const payload = {
       name: name.trim(),
       kind,
