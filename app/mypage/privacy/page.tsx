@@ -32,6 +32,7 @@ export default function PrivacyPage() {
           <li>Google（認証）</li>
           <li>Vercel（ホスティング）</li>
           <li>Resend（メール配信）</li>
+          <li>Google アナリティクス（利用状況の把握）</li>
         </ul>
       </section>
       <section className="space-y-1">

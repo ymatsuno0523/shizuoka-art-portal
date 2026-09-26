@@ -3,6 +3,7 @@ import { Noto_Sans_JP } from "next/font/google";
 import { Suspense } from "react";
 import { AuthProvider } from "@/app/components/AuthProvider";
 import BottomNav from "@/app/components/BottomNav";
+import GaPageViews from "@/app/components/GaPageViews";
 import Header from "@/app/components/Header";
 import NavigationFeedback from "@/app/components/NavigationFeedback";
 import TabNavManager from "@/app/components/TabNavManager";
@@ -28,6 +29,8 @@ export const metadata: Metadata = {
   },
 };
 
+const gaId = process.env.NEXT_PUBLIC_GA_ID;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -42,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Suspense fallback={<div className="h-16" />}>
               <TabNavManager />
               <NavigationFeedback />
+              {gaId ? <GaPageViews gaId={gaId} /> : null}
               <BottomNav />
             </Suspense>
           </div>
