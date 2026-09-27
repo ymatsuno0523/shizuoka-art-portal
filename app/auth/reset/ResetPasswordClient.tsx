@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
+import { toUserFormError } from "@/lib/form-errors";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 const inputClass =
@@ -32,7 +33,7 @@ export default function ResetPasswordClient() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setBusy(false);
     if (updateError) {
-      setError(updateError.message);
+      setError(toUserFormError(updateError.message, "パスワードの更新に失敗しました。"));
       return;
     }
     router.replace("/mypage");

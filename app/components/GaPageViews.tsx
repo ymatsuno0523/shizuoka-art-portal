@@ -11,6 +11,24 @@ declare global {
   }
 }
 
+function sendPageView(gaId: string, pagePath: string) {
+  if (typeof window.gtag !== "function") return;
+  // page_path を更新したうえで、明示的に page_view を送る
+  // （send_page_view:false のあとの config だけだとヒットしないことがある）
+  window.gtag("config", gaId, {
+    send_page_view: false,
+    page_path: pagePath,
+    page_title: document.title,
+    page_location: window.location.href,
+  });
+  window.gtag("event", "page_view", {
+    send_to: gaId,
+    page_path: pagePath,
+    page_title: document.title,
+    page_location: window.location.href,
+  });
+}
+
 export default function GaPageViews({ gaId }: { gaId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -18,19 +36,31 @@ export default function GaPageViews({ gaId }: { gaId: string }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!ready || typeof window.gtag !== "function") return;
+    if (ready) return;
+    // onLoad を逃しても、gtag が入れば計測を開始する
+    if (typeof window.gtag === "function") {
+      setReady(true);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      if (typeof window.gtag === "function") {
+        setReady(true);
+        window.clearInterval(timer);
+      }
+    }, 200);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 10000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(stop);
+    };
+  }, [ready]);
 
+  useEffect(() => {
+    if (!ready) return;
     const pagePath = search ? `${pathname}?${search}` : pathname;
-    // SPA では config の page_path 更新がページ単位の計測になる
-    // title は遷移直後に古いことがあるので、少し遅らせる
     const timer = window.setTimeout(() => {
-      window.gtag?.("config", gaId, {
-        page_path: pagePath,
-        page_title: document.title,
-        page_location: window.location.href,
-      });
+      sendPageView(gaId, pagePath);
     }, 0);
-
     return () => window.clearTimeout(timer);
   }, [ready, pathname, search, gaId]);
 

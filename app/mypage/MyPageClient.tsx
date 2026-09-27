@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
 import { rememberAuthNext } from "@/lib/auth-next";
+import { toUserFormError } from "@/lib/form-errors";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { embedOne } from "@/app/mypage/embed";
 
@@ -139,7 +140,7 @@ export default function MyPageClient() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setAuthBusy(false);
     if (error) {
-      setAuthError(error.message);
+      setAuthError(toUserFormError(error.message, "ログインに失敗しました。"));
       return;
     }
     redirectAfterLogin();
@@ -157,7 +158,7 @@ export default function MyPageClient() {
     const { data, error } = await supabase.auth.signUp({ email, password });
     setAuthBusy(false);
     if (error) {
-      setAuthError(error.message);
+      setAuthError(toUserFormError(error.message, "登録に失敗しました。"));
       return;
     }
     if (!data.session) {
@@ -189,7 +190,7 @@ export default function MyPageClient() {
     });
     if (error) {
       setAuthBusy(false);
-      setAuthError(error.message);
+      setAuthError(toUserFormError(error.message, "Googleログインに失敗しました。"));
     }
   }
 
@@ -207,7 +208,7 @@ export default function MyPageClient() {
     });
     setAuthBusy(false);
     if (error) {
-      setAuthError(error.message);
+      setAuthError(toUserFormError(error.message, "メールの送信に失敗しました。"));
       return;
     }
     setAuthMessage(

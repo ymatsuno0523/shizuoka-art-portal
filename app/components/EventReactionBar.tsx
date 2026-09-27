@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
+import { toUserFormError } from "@/lib/form-errors";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 export default function EventReactionBar({
@@ -36,7 +37,7 @@ export default function EventReactionBar({
       );
       if (cancelled) return;
       if (countError) {
-        setError("行きたい・保存を使うには supabase/event-reactions.sql を実行してください。");
+        setError("行きたい・保存の機能を準備中です。しばらくしてからお試しください。");
         setAvailable(false);
         setReady(true);
         return;
@@ -96,7 +97,12 @@ export default function EventReactionBar({
         setPeople([]);
       }
 
-      setError(goingResult.error?.message ?? saveResult.error?.message ?? null);
+      setError(
+        toUserFormError(
+          goingResult.error?.message ?? saveResult.error?.message,
+          "読み込みに失敗しました。",
+        ),
+      );
       setReady(true);
     }
 
@@ -127,7 +133,7 @@ export default function EventReactionBar({
         .eq("user_id", user.id);
       setBusy(null);
       if (deleteError) {
-        setError(deleteError.message);
+        setError(toUserFormError(deleteError.message, "行きたいの解除に失敗しました。"));
         return;
       }
       setGoing(false);
@@ -139,7 +145,7 @@ export default function EventReactionBar({
       .insert({ event_id: eventId, user_id: user.id });
     setBusy(null);
     if (insertError) {
-      setError(insertError.message);
+      setError(toUserFormError(insertError.message, "行きたいの登録に失敗しました。"));
       return;
     }
     setGoing(true);
@@ -169,7 +175,7 @@ export default function EventReactionBar({
         .eq("user_id", user.id);
       setBusy(null);
       if (deleteError) {
-        setError(deleteError.message);
+        setError(toUserFormError(deleteError.message, "保存の解除に失敗しました。"));
         return;
       }
       setSaved(false);
@@ -180,7 +186,7 @@ export default function EventReactionBar({
       .insert({ event_id: eventId, user_id: user.id });
     setBusy(null);
     if (insertError) {
-      setError(insertError.message);
+      setError(toUserFormError(insertError.message, "保存に失敗しました。"));
       return;
     }
     setSaved(true);

@@ -25,7 +25,8 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { coordinatesFor, isMappableAddress, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
-import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
+import { requiredMessage, toUserFormError } from "@/lib/form-errors";
+import { contentHref, isMissingSlugColumn, parseSlug, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import {
   compressImageFile,
@@ -157,7 +158,13 @@ export default function EventForm({
     setError(null);
 
     if (!title.trim() || !startAt) {
-      setError("タイトルと開始日は必須です。");
+      setError(
+        !title.trim() && !startAt
+          ? "タイトルと開始日は必須です。"
+          : !title.trim()
+            ? requiredMessage("タイトル")
+            : requiredMessage("開始日"),
+      );
       return;
     }
 
@@ -240,24 +247,25 @@ export default function EventForm({
     if (result.error && isMissingSlugColumn(result.error.message)) {
       if (parsedSlug.slug) {
         setSubmitting(false);
-        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        setError(toUserFormError(result.error.message));
         return;
       }
       result = await write(withoutSlug(withoutCoords(payload)) as typeof payload);
     }
 
+    if (
+      result.error &&
+      /null value in column "address"/i.test(result.error.message)
+    ) {
+      result = await write({ ...payload, address: addressValue ?? "" });
+      if (result.error && isMissingCoordColumn(result.error.message)) {
+        result = await write(withoutCoords({ ...payload, address: addressValue ?? "" }));
+      }
+    }
+
     if (result.error || !result.data) {
       setSubmitting(false);
-      const message = result.error?.message ?? "保存に失敗しました。";
-      const slugHint = slugSaveHint(message);
-      const hint = slugHint
-        ? slugHint
-        : /support_text/.test(message)
-          ? `${message} supabase/event-support-text.sql を実行したか確認してください。`
-          : /address/.test(message)
-            ? `${message} supabase/event-address.sql を実行したか確認してください。`
-            : `${message} supabase/multi-labels.sql を実行したか確認してください。`;
-      setError(hint);
+      setError(toUserFormError(result.error?.message));
       return;
     }
 
@@ -296,7 +304,10 @@ export default function EventForm({
     } catch (imageFailed) {
       setSubmitting(false);
       setError(
-        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} supabase/event-images-storage.sql を実行したか確認してください。`,
+        `${toUserFormError(
+          imageFailed instanceof Error ? imageFailed.message : null,
+          "画像の保存に失敗しました。",
+        )} イベントは保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -315,7 +326,10 @@ export default function EventForm({
     } catch (fileFailed) {
       setSubmitting(false);
       setError(
-        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
+        `${toUserFormError(
+          fileFailed instanceof Error ? fileFailed.message : null,
+          "PDFの保存に失敗しました。",
+        )} イベントは保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -330,11 +344,10 @@ export default function EventForm({
       <h1 className="mb-4 text-lg font-bold">
         {isEdit ? "イベントを編集" : "イベントを投稿"}
       </h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block text-sm">
           タイトル
           <input
-            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className={`${inputClass} mt-1`}
@@ -353,7 +366,6 @@ export default function EventForm({
           <label className="block min-w-0 text-sm">
             開始日
             <input
-              required
               type="date"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}

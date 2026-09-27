@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
+import { toUserFormError } from "@/lib/form-errors";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 export const saveButtonClass = (active: boolean) =>
@@ -74,7 +75,7 @@ export default function SaveButton({
       const { error: probeError } = await supabase.from(table).select(idColumn).limit(1);
       if (cancelled) return;
       if (probeError) {
-        setError("保存を使うには supabase/event-reactions.sql を実行してください。");
+        setError("保存機能を準備中です。しばらくしてからお試しください。");
         setAvailable(false);
         setReady(true);
         return;
@@ -87,7 +88,7 @@ export default function SaveButton({
         .maybeSingle();
       if (cancelled) return;
       setSaved(Boolean(data));
-      setError(rowError?.message ?? null);
+      setError(toUserFormError(rowError?.message, "読み込みに失敗しました。"));
       setReady(true);
     }
 
@@ -114,7 +115,7 @@ export default function SaveButton({
         .eq("user_id", user.id);
       setBusy(false);
       if (deleteError) {
-        setError(deleteError.message);
+        setError(toUserFormError(deleteError.message, "保存の解除に失敗しました。"));
         return;
       }
       setSaved(false);
@@ -125,7 +126,7 @@ export default function SaveButton({
       .insert({ [idColumn]: entityId, user_id: user.id });
     setBusy(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(toUserFormError(insertError.message, "保存に失敗しました。"));
       return;
     }
     setSaved(true);

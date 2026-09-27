@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/components/AuthProvider";
+import { toUserFormError } from "@/lib/form-errors";
 import { deleteOwnedContent } from "@/lib/delete-content";
 
 const confirmMessage = {
@@ -39,7 +40,7 @@ export default function OwnerActions({
     const result = await deleteOwnedContent(kind, id);
     if (result.error) {
       setDeleting(false);
-      setError(result.error);
+      setError(toUserFormError(result.error, "削除に失敗しました。"));
       return;
     }
     router.replace(listHref);

@@ -13,7 +13,8 @@ import type { CircleImage, CircleRow } from "@/lib/circles";
 import { REGIONS } from "@/lib/event-form";
 import { orgKindOptions, regionOptions } from "@/lib/event-payload";
 import { parseLabels } from "@/lib/labels";
-import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
+import { requiredMessage, toUserFormError } from "@/lib/form-errors";
+import { contentHref, isMissingSlugColumn, parseSlug, withoutSlug } from "@/lib/slug";
 import {
   MAX_ATTACHMENTS,
   saveAttachments,
@@ -113,7 +114,7 @@ export default function CircleForm({
     setError(null);
 
     if (!name.trim()) {
-      setError("名前は必須です。");
+      setError(requiredMessage("名前"));
       return;
     }
 
@@ -157,49 +158,37 @@ export default function CircleForm({
 
     setSubmitting(true);
     const supabase = createBrowserSupabase();
-    let result =
+    const write = (body: typeof payload | ReturnType<typeof withoutSlug<typeof payload>>) =>
       isEdit && circle
-        ? await supabase.from("circles").update(payload).eq("id", circle.id).select("id").single()
-        : await supabase
+        ? supabase.from("circles").update(body).eq("id", circle.id).select("id").single()
+        : supabase
             .from("circles")
             .insert({
-              ...payload,
+              ...body,
               created_by: user.id,
               created_at: new Date().toISOString(),
             })
             .select("id")
             .single();
+    let result = await write(payload);
+    if (
+      result.error &&
+      /null value in column "address"/i.test(result.error.message)
+    ) {
+      result = await write({ ...payload, address: "" });
+    }
     if (result.error && isMissingSlugColumn(result.error.message)) {
       if (parsedSlug.slug) {
         setSubmitting(false);
-        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        setError(toUserFormError(result.error.message));
         return;
       }
-      const body = withoutSlug(payload);
-      result =
-        isEdit && circle
-          ? await supabase.from("circles").update(body).eq("id", circle.id).select("id").single()
-          : await supabase
-              .from("circles")
-              .insert({
-                ...body,
-                created_by: user.id,
-                created_at: new Date().toISOString(),
-              })
-              .select("id")
-              .single();
+      result = await write(withoutSlug(payload));
     }
 
     if (result.error || !result.data) {
       setSubmitting(false);
-      const message = result.error?.message ?? "保存に失敗しました。";
-      const slugHint = slugSaveHint(message);
-      const hint = slugHint
-        ? slugHint
-        : /circles_kind_check/.test(message)
-          ? `${message} supabase/circle-admin-kind.sql を実行したか確認してください。`
-          : `${message} supabase/multi-labels.sql を実行したか確認してください。`;
-      setError(hint);
+      setError(toUserFormError(result.error?.message));
       return;
     }
 
@@ -237,7 +226,10 @@ export default function CircleForm({
     } catch (imageFailed) {
       setSubmitting(false);
       setError(
-        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 団体は保存されています。`,
+        `${toUserFormError(
+          imageFailed instanceof Error ? imageFailed.message : null,
+          "画像の保存に失敗しました。",
+        )} 団体は保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -256,7 +248,10 @@ export default function CircleForm({
     } catch (fileFailed) {
       setSubmitting(false);
       setError(
-        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
+        `${toUserFormError(
+          fileFailed instanceof Error ? fileFailed.message : null,
+          "PDFの保存に失敗しました。",
+        )} 団体は保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -271,11 +266,10 @@ export default function CircleForm({
       <h1 className="mb-4 text-lg font-bold">
         {isEdit ? "団体を編集" : "団体を登録"}
       </h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block text-sm">
           名前
           <input
-            required
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={`${inputClass} mt-1`}

@@ -19,7 +19,8 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { coordinatesFor, isMappableAddress, isMissingCoordColumn, withoutCoords } from "@/lib/geo";
-import { contentHref, isMissingSlugColumn, parseSlug, slugSaveHint, withoutSlug } from "@/lib/slug";
+import { requiredMessage, toUserFormError } from "@/lib/form-errors";
+import { contentHref, isMissingSlugColumn, parseSlug, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import { SNS_LINKS } from "@/lib/sns";
 import type { VenueImage, VenueRow } from "@/lib/venues";
@@ -118,7 +119,7 @@ export default function VenueForm({
     setError(null);
 
     if (!name.trim()) {
-      setError("施設名は必須です。");
+      setError(requiredMessage("施設名"));
       return;
     }
 
@@ -144,11 +145,12 @@ export default function VenueForm({
     }
 
     setSubmitting(true);
+    // 空欄は null。DB が NOT NULL の場合は空文字にフォールバックする
     const addressValue = emptyToNull(address);
     const coords =
       addressValue && isMappableAddress(addressValue)
         ? await coordinatesFor(addressValue, region)
-        : { lat: null, lng: null };
+        : { lat: null as number | null, lng: null as number | null };
     const payload = {
       name: name.trim(),
       kind,
@@ -188,10 +190,19 @@ export default function VenueForm({
     if (result.error && isMissingCoordColumn(result.error.message)) {
       result = await write(withoutCoords(payload));
     }
+    if (
+      result.error &&
+      /null value in column "address"/i.test(result.error.message)
+    ) {
+      result = await write({ ...payload, address: "" });
+      if (result.error && isMissingCoordColumn(result.error.message)) {
+        result = await write(withoutCoords({ ...payload, address: "" }));
+      }
+    }
     if (result.error && isMissingSlugColumn(result.error.message)) {
       if (parsedSlug.slug) {
         setSubmitting(false);
-        setError(slugSaveHint(result.error.message) ?? result.error.message);
+        setError(toUserFormError(result.error.message));
         return;
       }
       result = await write(withoutSlug(withoutCoords(payload)) as typeof payload);
@@ -199,8 +210,7 @@ export default function VenueForm({
 
     if (result.error || !result.data) {
       setSubmitting(false);
-      const message = result.error?.message ?? "保存に失敗しました。";
-      setError(slugSaveHint(message) ?? `${message} supabase/multi-labels.sql を実行したか確認してください。`);
+      setError(toUserFormError(result.error?.message));
       return;
     }
 
@@ -238,7 +248,10 @@ export default function VenueForm({
     } catch (imageFailed) {
       setSubmitting(false);
       setError(
-        `${imageFailed instanceof Error ? imageFailed.message : "画像の保存に失敗しました。"} 施設は保存されています。`,
+        `${toUserFormError(
+          imageFailed instanceof Error ? imageFailed.message : null,
+          "画像の保存に失敗しました。",
+        )} 施設は保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -257,7 +270,10 @@ export default function VenueForm({
     } catch (fileFailed) {
       setSubmitting(false);
       setError(
-        `${fileFailed instanceof Error ? fileFailed.message : "PDFの保存に失敗しました。"} supabase/attachments.sql を実行したか確認してください。`,
+        `${toUserFormError(
+          fileFailed instanceof Error ? fileFailed.message : null,
+          "PDFの保存に失敗しました。",
+        )} 施設は保存されています。`,
       );
       replaceAppHref(router, savedPath);
       return;
@@ -272,11 +288,10 @@ export default function VenueForm({
       <h1 className="mb-4 text-lg font-bold">
         {isEdit ? "施設を編集" : "施設を登録"}
       </h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block text-sm">
           施設名
           <input
-            required
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={`${inputClass} mt-1`}
