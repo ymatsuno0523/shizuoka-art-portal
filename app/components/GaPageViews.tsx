@@ -13,18 +13,22 @@ declare global {
 
 function sendPageView(gaId: string, pagePath: string) {
   if (typeof window.gtag !== "function") return;
-  // page_path を更新したうえで、明示的に page_view を送る
-  // （send_page_view:false のあとの config だけだとヒットしないことがある）
+  // 各ページで metadata が共通のため、タイトルだけだと1件にまとまる。
+  // 計測上はパスを含めて区別する（document.title 自体は変えない）
+  const pageTitle =
+    pagePath === "/"
+      ? document.title
+      : `${document.title} · ${pagePath}`;
   window.gtag("config", gaId, {
     send_page_view: false,
     page_path: pagePath,
-    page_title: document.title,
+    page_title: pageTitle,
     page_location: window.location.href,
   });
   window.gtag("event", "page_view", {
     send_to: gaId,
     page_path: pagePath,
-    page_title: document.title,
+    page_title: pageTitle,
     page_location: window.location.href,
   });
 }
