@@ -88,7 +88,7 @@ export default function SaveButton({
         .maybeSingle();
       if (cancelled) return;
       setSaved(Boolean(data));
-      setError(toUserFormError(rowError?.message, "読み込みに失敗しました。"));
+      setError(rowError ? toUserFormError(rowError.message, "読み込みに失敗しました。") : null);
       setReady(true);
     }
 

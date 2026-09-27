@@ -97,12 +97,8 @@ export default function EventReactionBar({
         setPeople([]);
       }
 
-      setError(
-        toUserFormError(
-          goingResult.error?.message ?? saveResult.error?.message,
-          "読み込みに失敗しました。",
-        ),
-      );
+      const loadError = goingResult.error?.message ?? saveResult.error?.message;
+      setError(loadError ? toUserFormError(loadError, "読み込みに失敗しました。") : null);
       setReady(true);
     }
 
