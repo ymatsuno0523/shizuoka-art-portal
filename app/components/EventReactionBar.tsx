@@ -19,6 +19,7 @@ export default function EventReactionBar({
   const isOwner = Boolean(user && createdBy && user.id === createdBy);
 
   const [going, setGoing] = useState(false);
+  const [goingCount, setGoingCount] = useState(0);
   const [saved, setSaved] = useState(false);
   const [people, setPeople] = useState<{ id: string; name: string }[]>([]);
   const [ready, setReady] = useState(false);
@@ -31,7 +32,7 @@ export default function EventReactionBar({
     let cancelled = false;
 
     async function load() {
-      const { error: countError } = await supabase.rpc(
+      const { data: countData, error: countError } = await supabase.rpc(
         "event_going_count",
         { p_event_id: eventId },
       );
@@ -43,6 +44,7 @@ export default function EventReactionBar({
         return;
       }
       setAvailable(true);
+      setGoingCount(typeof countData === "number" ? countData : 0);
 
       if (!user) {
         setGoing(false);
@@ -133,6 +135,7 @@ export default function EventReactionBar({
         return;
       }
       setGoing(false);
+      setGoingCount((count) => Math.max(0, count - 1));
       setPeople((current) => current.filter((person) => person.id !== user.id));
       return;
     }
@@ -145,6 +148,7 @@ export default function EventReactionBar({
       return;
     }
     setGoing(true);
+    setGoingCount((count) => count + 1);
     if (isOwner) {
       setPeople((current) =>
         current.some((person) => person.id === user.id)
@@ -197,7 +201,7 @@ export default function EventReactionBar({
 
   return (
     <div className="mt-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={!ready || !available || busy !== null}
@@ -207,6 +211,9 @@ export default function EventReactionBar({
         >
           <FlagIcon filled={going} />
           行きたい
+          {goingCount > 0 ? (
+            <span className="tabular-nums opacity-80">{goingCount}</span>
+          ) : null}
         </button>
         <button
           type="button"
