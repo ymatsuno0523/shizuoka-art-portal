@@ -73,7 +73,7 @@ export default function EventForm({
   const [region, setRegion] = useState(event?.region || regionOptions()[0]);
   const [genre, setGenre] = useState(parseLabels(event?.genre));
   const [orgMode, setOrgMode] = useState<"org" | "text">(initialOrgMode(event, orgs));
-  const [circleId, setCircleId] = useState(event?.circle_id ?? orgs[0]?.id ?? "");
+  const [circleId, setCircleId] = useState(event?.circle_id ?? "");
   const [timeText, setTimeText] = useState(event?.time_text ?? "");
   const [scheduleNote, setScheduleNote] = useState(event?.schedule_note ?? "");
   const [feeText, setFeeText] = useState(event?.fee_text ?? "");
@@ -537,16 +537,13 @@ export default function EventForm({
                 onChange={(e) => setCircleId(e.target.value)}
                 className={inputClass}
               >
-                {orgs.length === 0 ? (
-                  <option value="">登録済み団体はまだありません</option>
-                ) : (
-                  orgs.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                      {joinLabels(org.kind) ? `（${joinLabels(org.kind)}）` : ""}
-                    </option>
-                  ))
-                )}
+                <option value="">指定しない</option>
+                {orgs.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                    {joinLabels(org.kind) ? `（${joinLabels(org.kind)}）` : ""}
+                  </option>
+                ))}
               </select>
             </div>
           ) : (
