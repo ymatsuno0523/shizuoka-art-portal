@@ -52,6 +52,8 @@ export function addressQuery(address: string, region: string | null) {
   if (!text) return "";
   text = text.replace(/[‐‑‒–—―ー－−]/g, "-");
   text = text.replace(/\s+/g, "");
+  // 階数表記はジオコードのノイズになる（例: 8-12F ← 8-1 2F）
+  text = text.replace(/-?[0-9０-９]+(?:[FfＦｆ]|階).*$/u, "");
   text = text.replace(/(\d+)丁目/g, "$1-");
   text = text.replace(/(\d+)番地の(\d+)/g, "$1-$2");
   text = text.replace(/(\d+)番地?/g, "$1-");
@@ -110,10 +112,10 @@ export function isMappableAddress(address: string | null | undefined) {
   const text = address?.normalize("NFKC").trim() ?? "";
   if (!text) return false;
   const compact = text.replace(/\s+/g, "");
-  return (
-    /[0-9０-９]+(丁目|番地|番|号)/.test(compact) ||
-    /[0-9０-９]+[-‐‑‒–—―ー－−][0-9０-９]/.test(compact)
-  );
+  if (/[0-9０-９]+(丁目|番地|番|号)/.test(compact)) return true;
+  if (/[0-9０-９]+[-‐‑‒–—―ー－−][0-9０-９]/.test(compact)) return true;
+  // 郊外の地番表記（例: 浜松市天竜区上野948）
+  return /(?:市|区|町|村).+[ぁ-んァ-ン一-龥ー].*[0-9０-９]+/.test(compact);
 }
 
 function pinExtras(source: MapPinSource): Omit<MapPin, "id" | "lat" | "lng"> {

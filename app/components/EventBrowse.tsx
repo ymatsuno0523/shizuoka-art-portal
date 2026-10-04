@@ -105,7 +105,7 @@ export default function EventBrowse({
                     </div>
                     <p className="mt-0.5 truncate font-semibold">{event.title}</p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      {event.region && !event.pinAddress?.trim() ? (
+                      {event.region ? (
                         <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
                           {event.region}
                         </p>
