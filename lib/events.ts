@@ -36,6 +36,7 @@ export type EventRow = {
   parking_text?: string | null;
   created_by?: string | null;
   slug?: string | null;
+  view_count?: number | null;
 };
 
 export type EventWithPlace = EventRow & {

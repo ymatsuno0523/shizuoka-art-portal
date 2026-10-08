@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import EventReactionBar from "@/app/components/EventReactionBar";
+import EventViewCount from "@/app/components/EventViewCount";
 import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
@@ -42,6 +43,11 @@ export default async function EventDetailPage({
       </div>
       <h1 className="mt-1 text-xl font-bold">{event.title}</h1>
       <EventReactionBar eventId={event.id} createdBy={event.created_by} />
+      <EventViewCount
+        eventId={event.id}
+        createdBy={event.created_by}
+        initialCount={event.view_count}
+      />
       <div className="mt-4">
         <ImageSlider
           urls={event.images.map((image) => image.url)}
