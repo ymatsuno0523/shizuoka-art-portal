@@ -82,7 +82,7 @@ export default function EventBrowse({
                 <li key={event.id}>
                   <Link
                     href={contentHref("events", event)}
-                    className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-1.5 dark:border-zinc-800"
+                    className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
                   >
                     {event.images[0] ? (
                       <img
