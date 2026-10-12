@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
-import { InfoLink, InfoRow } from "@/app/components/InfoRow";
+import { InfoLink, InfoPhone, InfoRow } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
@@ -65,7 +65,7 @@ export default async function VenueDetailPage({
         <InfoRow label="種類" value={joinLabels(venue.kind)} />
         <InfoRow label="住所" value={venue.address} />
         <InfoRow label="地域" value={venue.address?.trim() ? null : venue.region} />
-        <InfoRow label="電話" value={venue.phone} />
+        <InfoPhone value={venue.phone} />
         <InfoRow label="営業時間" value={venue.hours_text} />
         <InfoRow label="定休日" value={venue.holiday_text} />
         <InfoRow label="料金" value={venue.fee_text} />

@@ -26,37 +26,42 @@ export default function CircleBrowse({
           return <p className="text-sm text-zinc-500">条件に合う団体がありません。</p>;
         }
         return (
-          <ul className="space-y-3">
-            {items.map((circle) => (
-              <li key={circle.id}>
-                <Link
-                  href={contentHref("circles", circle)}
-                  className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-                >
-                  {circle.images[0] ? (
-                    <img
-                      src={circle.images[0].url}
-                      alt=""
-                      className="h-[70px] w-[70px] shrink-0 rounded-[6px] object-cover"
-                    />
-                  ) : (
-                    <NoImage className="h-[70px] w-[70px] shrink-0 rounded-[6px]" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{circle.name}</p>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      {circle.region ? (
-                        <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                          {circle.region}
-                        </p>
-                      ) : null}
-                      <CategoryChips labels={circle.kind} />
+          <>
+            <ul className="space-y-2">
+              {items.map((circle) => (
+                <li key={circle.id}>
+                  <Link
+                    href={contentHref("circles", circle)}
+                    className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-1.5 dark:border-zinc-800"
+                  >
+                    {circle.images[0] ? (
+                      <img
+                        src={circle.images[0].url}
+                        alt=""
+                        className="h-20 w-20 shrink-0 rounded-[6px] object-cover"
+                      />
+                    ) : (
+                      <NoImage className="h-20 w-20 shrink-0 rounded-[6px]" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{circle.name}</p>
+                      <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                        {circle.region ? (
+                          <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                            {circle.region}
+                          </p>
+                        ) : null}
+                        <CategoryChips labels={circle.kind} />
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-center text-xs text-zinc-500 tabular-nums">
+              全{items.length}件
+            </p>
+          </>
         );
       }}
     </MineGate>

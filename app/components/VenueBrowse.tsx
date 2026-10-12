@@ -42,37 +42,42 @@ export default function VenueBrowse({
         }));
         if (view === "map") return <PlacesMap pins={pins} />;
         return (
-          <ul className="space-y-3">
-            {items.map((venue) => (
-              <li key={venue.id}>
-                <Link
-                  href={contentHref("venues", venue)}
-                  className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-                >
-                  {venue.images[0] ? (
-                    <img
-                      src={venue.images[0].url}
-                      alt=""
-                      className="h-[70px] w-[70px] shrink-0 rounded-[6px] object-cover"
-                    />
-                  ) : (
-                    <NoImage className="h-[70px] w-[70px] shrink-0 rounded-[6px]" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{venue.name}</p>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      {venue.region ? (
-                        <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                          {venue.region}
-                        </p>
-                      ) : null}
-                      <CategoryChips labels={venue.kind} />
+          <>
+            <ul className="space-y-2">
+              {items.map((venue) => (
+                <li key={venue.id}>
+                  <Link
+                    href={contentHref("venues", venue)}
+                    className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-1.5 dark:border-zinc-800"
+                  >
+                    {venue.images[0] ? (
+                      <img
+                        src={venue.images[0].url}
+                        alt=""
+                        className="h-20 w-20 shrink-0 rounded-[6px] object-cover"
+                      />
+                    ) : (
+                      <NoImage className="h-20 w-20 shrink-0 rounded-[6px]" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{venue.name}</p>
+                      <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                        {venue.region ? (
+                          <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                            {venue.region}
+                          </p>
+                        ) : null}
+                        <CategoryChips labels={venue.kind} />
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-center text-xs text-zinc-500 tabular-nums">
+              全{items.length}件
+            </p>
+          </>
         );
       }}
     </MineGate>

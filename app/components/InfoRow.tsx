@@ -41,3 +41,54 @@ export function InfoLink({
     </div>
   );
 }
+
+function telHref(value: string) {
+  const compact = value.normalize("NFKC").replace(/[^\d+]/g, "");
+  return compact ? `tel:${compact}` : null;
+}
+
+export function InfoPhone({
+  label = "電話",
+  value,
+}: {
+  label?: string;
+  value?: string | null;
+}) {
+  if (!value?.trim()) return null;
+  const href = telHref(value);
+  return (
+    <div className={infoGridClass}>
+      <dt className="text-zinc-500">{label}</dt>
+      <dd className="break-words">
+        {href ? (
+          <a href={href} className="underline">
+            {value}
+          </a>
+        ) : (
+          value
+        )}
+      </dd>
+    </div>
+  );
+}
+
+export function InfoEmail({
+  label = "メール",
+  value,
+}: {
+  label?: string;
+  value?: string | null;
+}) {
+  const text = value?.trim();
+  if (!text) return null;
+  return (
+    <div className={infoGridClass}>
+      <dt className="text-zinc-500">{label}</dt>
+      <dd>
+        <a href={`mailto:${text}`} className="break-all underline">
+          {text}
+        </a>
+      </dd>
+    </div>
+  );
+}

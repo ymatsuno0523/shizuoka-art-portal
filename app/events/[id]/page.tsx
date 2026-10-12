@@ -5,7 +5,13 @@ import { CategoryChips } from "@/app/components/CategoryChip";
 import EventReactionBar from "@/app/components/EventReactionBar";
 import EventViewCount from "@/app/components/EventViewCount";
 import ImageSlider from "@/app/components/ImageSlider";
-import { InfoLink, InfoRow, infoGridClass } from "@/app/components/InfoRow";
+import {
+  InfoEmail,
+  InfoLink,
+  InfoPhone,
+  InfoRow,
+  infoGridClass,
+} from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import { formatEventDateRange, getEvent } from "@/lib/events";
@@ -111,8 +117,8 @@ export default async function EventDetailPage({
         ) : null}
         <InfoRow label="共催・後援" value={event.support_text} />
         <InfoRow label="問い合わせ" value={event.contact_name} />
-        <InfoRow label="電話" value={event.contact_phone} />
-        <InfoRow label="メール" value={event.contact_email} />
+        <InfoPhone value={event.contact_phone} />
+        <InfoEmail value={event.contact_email} />
         <InfoLink label="HP" href={event.website_url} />
         <InfoRow label="駐車場" value={event.parking_text} />
         <PdfLinks files={event.files} />

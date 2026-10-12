@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
 import ImageSlider from "@/app/components/ImageSlider";
-import { InfoLink, InfoRow } from "@/app/components/InfoRow";
+import { InfoEmail, InfoLink, InfoPhone, InfoRow } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import SaveButton from "@/app/components/SaveButton";
@@ -67,8 +67,8 @@ export default async function CircleDetailPage({
         <InfoRow label="ジャンル" value={circle.genre} />
         <InfoRow label="活動場所" value={circle.address} />
         <InfoRow label="代表" value={circle.representative} />
-        <InfoRow label="電話" value={circle.phone} />
-        <InfoRow label="メール" value={circle.email} />
+        <InfoPhone value={circle.phone} />
+        <InfoEmail value={circle.email} />
         <InfoLink label="HP" href={circle.website_url} />
         <PdfLinks files={circle.files} />
         <SnsIconLinks

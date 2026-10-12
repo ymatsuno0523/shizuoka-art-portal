@@ -76,47 +76,52 @@ export default function EventBrowse({
           );
         }
         return (
-          <ul className="space-y-3">
-            {listed.map((event) => (
-              <li key={event.id}>
-                <Link
-                  href={contentHref("events", event)}
-                  className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-2 dark:border-zinc-800"
-                >
-                  {event.images[0] ? (
-                    <img
-                      src={event.images[0].url}
-                      alt=""
-                      className="h-[70px] w-[70px] shrink-0 rounded-[6px] object-cover"
-                    />
-                  ) : (
-                    <NoImage className="h-[70px] w-[70px] shrink-0 rounded-[6px]" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs text-zinc-500">
-                        {formatEventDateRange(event.start_at, event.end_at)}
-                      </p>
-                      {isPastEvent(event) ? (
-                        <span className="inline-flex h-5 items-center rounded-full bg-zinc-100 px-2.5 text-[10px] font-semibold leading-none text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                          過去の展示
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-0.5 truncate font-semibold">{event.title}</p>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      {event.region ? (
-                        <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                          {event.region}
+          <>
+            <ul className="space-y-2">
+              {listed.map((event) => (
+                <li key={event.id}>
+                  <Link
+                    href={contentHref("events", event)}
+                    className="press-card flex items-center gap-3 rounded-[8px] border border-zinc-200 p-1.5 dark:border-zinc-800"
+                  >
+                    {event.images[0] ? (
+                      <img
+                        src={event.images[0].url}
+                        alt=""
+                        className="h-20 w-20 shrink-0 rounded-[6px] object-cover"
+                      />
+                    ) : (
+                      <NoImage className="h-20 w-20 shrink-0 rounded-[6px]" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs text-zinc-500">
+                          {formatEventDateRange(event.start_at, event.end_at)}
                         </p>
-                      ) : null}
-                      <CategoryChips labels={event.genre} />
+                        {isPastEvent(event) ? (
+                          <span className="inline-flex h-5 items-center rounded-full bg-zinc-100 px-2.5 text-[10px] font-semibold leading-none text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                            過去の展示
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 truncate font-semibold">{event.title}</p>
+                      <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                        {event.region ? (
+                          <p className="min-w-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                            {event.region}
+                          </p>
+                        ) : null}
+                        <CategoryChips labels={event.genre} />
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-center text-xs text-zinc-500 tabular-nums">
+              全{listed.length}件
+            </p>
+          </>
         );
       }}
     </MineGate>
