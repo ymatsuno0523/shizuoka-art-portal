@@ -228,6 +228,34 @@ export async function getEvents() {
   };
 }
 
+export async function getEventsByVenueId(venueId: string) {
+  const supabase = createSupabaseClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("*, event_images(id, url, sort_order)")
+    .eq("venue_id", venueId)
+    .order("start_at", { ascending: true });
+
+  if (error) return { events: [] as EventWithPlace[], error };
+
+  const rows = (data ?? []) as (EventRow & { event_images: EventImage[] | null })[];
+  return {
+    events: rows.map((event) => ({
+      ...event,
+      genre: parseLabels(event.genre),
+      region: event.region,
+      ...resolvePlace(event, null),
+      ...pinFields(event),
+      ...resolveOrganizer(event, null),
+      venueSlug: null,
+      circleSlug: null,
+      images: sortedImages(event.event_images),
+      files: [],
+    })),
+    error: null,
+  };
+}
+
 export async function getEvent(id: string) {
   const supabase = createSupabaseClient();
   const column = isUuid(id) ? "id" : "slug";

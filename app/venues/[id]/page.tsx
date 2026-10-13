@@ -5,8 +5,10 @@ import ImageSlider from "@/app/components/ImageSlider";
 import { InfoLink, InfoPhone, InfoRow } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
+import RelatedEventList from "@/app/components/RelatedEventList";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
+import { getEventsByVenueId, isPastEvent } from "@/lib/events";
 import { joinLabels } from "@/lib/labels";
 import { contentHref, replacedSlugPath } from "@/lib/slug";
 import { getVenue } from "@/lib/venues";
@@ -34,6 +36,7 @@ export default async function VenueDetailPage({
   const canonical = replacedSlugPath("venues", id, venue.slug);
   if (canonical) redirect(canonical);
   const path = contentHref("venues", venue);
+  const { events: venueEvents } = await getEventsByVenueId(venue.id);
 
   return (
     <main className="px-4 py-6">
@@ -83,6 +86,11 @@ export default async function VenueDetailPage({
           }}
         />
       </dl>
+
+      <RelatedEventList
+        title="この施設のイベント"
+        events={venueEvents.filter((event) => !isPastEvent(event))}
+      />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/venues">戻る</BackLink>
