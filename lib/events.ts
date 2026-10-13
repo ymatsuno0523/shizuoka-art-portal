@@ -228,6 +228,23 @@ export async function getEvents() {
   };
 }
 
+function mapRelatedEvents(
+  rows: (EventRow & { event_images: EventImage[] | null })[],
+) {
+  return rows.map((event) => ({
+    ...event,
+    genre: parseLabels(event.genre),
+    region: event.region,
+    ...resolvePlace(event, null),
+    ...pinFields(event),
+    ...resolveOrganizer(event, null),
+    venueSlug: null,
+    circleSlug: null,
+    images: sortedImages(event.event_images),
+    files: [],
+  }));
+}
+
 export async function getEventsByVenueId(venueId: string) {
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
@@ -239,21 +256,21 @@ export async function getEventsByVenueId(venueId: string) {
   if (error) return { events: [] as EventWithPlace[], error };
 
   const rows = (data ?? []) as (EventRow & { event_images: EventImage[] | null })[];
-  return {
-    events: rows.map((event) => ({
-      ...event,
-      genre: parseLabels(event.genre),
-      region: event.region,
-      ...resolvePlace(event, null),
-      ...pinFields(event),
-      ...resolveOrganizer(event, null),
-      venueSlug: null,
-      circleSlug: null,
-      images: sortedImages(event.event_images),
-      files: [],
-    })),
-    error: null,
-  };
+  return { events: mapRelatedEvents(rows), error: null };
+}
+
+export async function getEventsByCircleId(circleId: string) {
+  const supabase = createSupabaseClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("*, event_images(id, url, sort_order)")
+    .eq("circle_id", circleId)
+    .order("start_at", { ascending: true });
+
+  if (error) return { events: [] as EventWithPlace[], error };
+
+  const rows = (data ?? []) as (EventRow & { event_images: EventImage[] | null })[];
+  return { events: mapRelatedEvents(rows), error: null };
 }
 
 export async function getEvent(id: string) {

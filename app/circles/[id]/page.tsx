@@ -5,9 +5,11 @@ import ImageSlider from "@/app/components/ImageSlider";
 import { InfoEmail, InfoLink, InfoPhone, InfoRow } from "@/app/components/InfoRow";
 import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
+import RelatedEventList from "@/app/components/RelatedEventList";
 import SaveButton from "@/app/components/SaveButton";
 import SnsIconLinks from "@/app/components/SnsIconLinks";
 import { getCircle } from "@/lib/circles";
+import { getEventsByCircleId, isPastEvent } from "@/lib/events";
 import { joinLabels } from "@/lib/labels";
 import { contentHref, replacedSlugPath } from "@/lib/slug";
 
@@ -34,6 +36,7 @@ export default async function CircleDetailPage({
   const canonical = replacedSlugPath("circles", id, circle.slug);
   if (canonical) redirect(canonical);
   const path = contentHref("circles", circle);
+  const { events: circleEvents } = await getEventsByCircleId(circle.id);
 
   return (
     <main className="px-4 py-6">
@@ -79,6 +82,11 @@ export default async function CircleDetailPage({
           }}
         />
       </dl>
+
+      <RelatedEventList
+        title="この団体のイベント"
+        events={circleEvents.filter((event) => !isPastEvent(event))}
+      />
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <BackLink href="/circles">戻る</BackLink>
