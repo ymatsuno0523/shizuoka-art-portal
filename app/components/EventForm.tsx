@@ -185,7 +185,10 @@ export default function EventForm({
       placeMode === "venue" && venueId
         ? venueOptions.find((item) => item.id === venueId)
         : null;
-    const locationValue = placeMode === "text" ? emptyToNull(locationText) : null;
+    const locationValue =
+      placeMode === "text" || (placeMode === "venue" && venueId)
+        ? emptyToNull(locationText)
+        : null;
     // 登録施設を選んでいるときは施設側の住所・座標を使う
     const addressValue = selectedVenue ? null : emptyToNull(address);
     const coords =
@@ -409,30 +412,43 @@ export default function EventForm({
             </label>
           </div>
           {placeMode === "venue" ? (
-            <div className="select-field">
-              <select
-                value={venueId}
-                onChange={(e) => {
-                  const nextId = e.target.value;
-                  setVenueId(nextId);
-                  const venue = venueOptions.find((item) => item.id === nextId);
-                  if (venue) {
-                    if (venue.region) setRegion(venue.region);
-                    setAddress(venue.address?.trim() ?? "");
-                  } else {
-                    setAddress("");
-                  }
-                }}
-                className={inputClass}
-              >
-                <option value="">指定しない</option>
-                {venueOptions.map((venue) => (
-                  <option key={venue.id} value={venue.id}>
-                    {venue.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="select-field">
+                <select
+                  value={venueId}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setVenueId(nextId);
+                    const venue = venueOptions.find((item) => item.id === nextId);
+                    if (venue) {
+                      if (venue.region) setRegion(venue.region);
+                      setAddress(venue.address?.trim() ?? "");
+                    } else {
+                      setAddress("");
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">指定しない</option>
+                  {venueOptions.map((venue) => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {venueId ? (
+                <label className="block">
+                  部屋・ホール（任意）
+                  <input
+                    value={locationText}
+                    onChange={(e) => setLocationText(e.target.value)}
+                    placeholder="例: 展示イベントホール"
+                    className={`${inputClass} mt-1`}
+                  />
+                </label>
+              ) : null}
+            </>
           ) : (
             <label className="block">
               会場名（任意）

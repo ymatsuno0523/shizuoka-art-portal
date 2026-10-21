@@ -41,6 +41,7 @@ export type EventRow = {
 
 export type EventWithPlace = EventRow & {
   placeLabel: string | null;
+  venueName: string | null;
   venueLinked: boolean;
   organizerLabel: string | null;
   circleLinked: boolean;
@@ -87,11 +88,15 @@ function resolvePlace(
   event: Pick<EventRow, "venue_id" | "location_text">,
   venueName?: string | null,
 ) {
+  const room = event.location_text?.trim() || null;
   if (event.venue_id && venueName) {
-    return { placeLabel: venueName, venueLinked: true };
+    return {
+      placeLabel: room ? `${venueName} ${room}` : venueName,
+      venueName,
+      venueLinked: true,
+    };
   }
-  const text = event.location_text?.trim() || null;
-  return { placeLabel: text, venueLinked: false };
+  return { placeLabel: room, venueName: null, venueLinked: false };
 }
 
 function resolveOrganizer(

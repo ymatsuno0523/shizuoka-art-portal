@@ -76,7 +76,7 @@ export default async function EventDetailPage({
           event.venueLinked ? (
             <div className={infoGridClass}>
               <dt className="text-zinc-500">会場</dt>
-              <dd>
+              <dd className="break-words">
                 <Link
                   href={contentHref("venues", {
                     id: event.venue_id!,
@@ -84,8 +84,11 @@ export default async function EventDetailPage({
                   })}
                   className="underline"
                 >
-                  {event.placeLabel}
+                  {event.venueName || event.placeLabel}
                 </Link>
+                {event.location_text?.trim() ? (
+                  <span>{` ${event.location_text.trim()}`}</span>
+                ) : null}
               </dd>
             </div>
           ) : (
