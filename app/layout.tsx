@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   },
   description:
     "静岡のアート情報を一元化！県内の展覧会・ワークショップ・アート施設・団体情報をまるごとチェック。カレンダー表示やエリア地図検索で、いま見たい・行きたいアートがすぐに見つかるポータルサイトです。",
+  verification: {
+    google: "gduXA799L_ePkaSAzvPZYmE-BYLWP93B8feyJ2ukXv8",
+  },
 };
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
