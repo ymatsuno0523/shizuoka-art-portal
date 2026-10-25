@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import EventForm from "@/app/components/EventForm";
 import { createSupabaseClient } from "@/lib/supabase";
 import type { OrgOption, VenueOption } from "@/lib/event-form";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "イベントを投稿",
+};
 
 export default async function NewEventPage() {
   const supabase = createSupabaseClient();

@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import InfoArticle, { InfoLink } from "@/app/mypage/InfoArticle";
+
+export const metadata: Metadata = {
+  title: "ヘルプ",
+};
 
 export default function HelpPage() {
   return (
@@ -16,7 +21,8 @@ export default function HelpPage() {
         自分の投稿は「投稿・登録」から編集・削除できます。PDFは最大3件まで添付でき、リンクを押すと新しいタブで開きます。
       </p>
       <p>
-        規約は <InfoLink href="/mypage/terms">利用規約</InfoLink>、個人情報は{" "}
+        対象分野は <InfoLink href="/mypage/about">このサイトについて</InfoLink>
+        、規約は <InfoLink href="/mypage/terms">利用規約</InfoLink>、個人情報は{" "}
         <InfoLink href="/mypage/privacy">プライバシーポリシー</InfoLink> を見てください。不備や掲載の間違いは{" "}
         <InfoLink href="/mypage/contact">お問い合わせ</InfoLink> から連絡できます。
       </p>

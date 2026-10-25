@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import CircleForm from "@/app/components/CircleForm";
 import { getCircle } from "@/lib/circles";
 import { replacedSlugPath } from "@/lib/slug";
 import { notFound, redirect } from "next/navigation";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { circle } = await getCircle(id);
+  if (!circle) return { title: "団体を編集" };
+  return { title: `${circle.name}を編集` };
+}
 
 export default async function EditCirclePage({
   params,

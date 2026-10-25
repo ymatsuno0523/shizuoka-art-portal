@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import VenueForm from "@/app/components/VenueForm";
 import { getVenue } from "@/lib/venues";
 import { replacedSlugPath } from "@/lib/slug";
 import { notFound, redirect } from "next/navigation";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { venue } = await getVenue(id);
+  if (!venue) return { title: "施設を編集" };
+  return { title: `${venue.name}を編集` };
+}
 
 export default async function EditVenuePage({
   params,

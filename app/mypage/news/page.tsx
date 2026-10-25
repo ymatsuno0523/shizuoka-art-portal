@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import InfoArticle from "@/app/mypage/InfoArticle";
+
+export const metadata: Metadata = {
+  title: "お知らせ",
+};
 
 export default function NewsPage() {
   return (

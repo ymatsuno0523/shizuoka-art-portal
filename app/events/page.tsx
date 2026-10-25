@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import EventBrowse from "@/app/components/EventBrowse";
 import FilterSheet from "@/app/components/FilterSheet";
@@ -11,6 +12,10 @@ import {
   type SearchParamValue,
 } from "@/lib/search-filters";
 import { matchesAnyFilter } from "@/lib/labels";
+
+export const metadata: Metadata = {
+  title: "イベント",
+};
 
 const EVENT_VIEWS = [
   { id: "list", label: "一覧" },

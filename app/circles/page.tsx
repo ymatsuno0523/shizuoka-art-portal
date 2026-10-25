@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import CircleBrowse from "@/app/components/CircleBrowse";
 import FilterSheet from "@/app/components/FilterSheet";
@@ -9,6 +10,10 @@ import {
   type SearchParamValue,
 } from "@/lib/search-filters";
 import { matchesAnyFilter } from "@/lib/labels";
+
+export const metadata: Metadata = {
+  title: "団体",
+};
 
 export default async function CirclesPage({
   searchParams,

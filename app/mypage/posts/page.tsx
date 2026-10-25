@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import PostsClient from "./PostsClient";
+
+export const metadata: Metadata = {
+  title: "投稿一覧",
+};
 
 export default function PostsPage() {
   return (

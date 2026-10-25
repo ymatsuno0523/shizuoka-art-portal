@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
@@ -12,6 +13,17 @@ import { getCircle } from "@/lib/circles";
 import { getEventsByCircleId, isPastEvent } from "@/lib/events";
 import { joinLabels } from "@/lib/labels";
 import { contentHref, replacedSlugPath } from "@/lib/slug";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { circle } = await getCircle(id);
+  if (!circle) return { title: "団体" };
+  return { title: circle.name };
+}
 
 export default async function CircleDetailPage({
   params,

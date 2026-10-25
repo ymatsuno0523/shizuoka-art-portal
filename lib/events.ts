@@ -26,7 +26,9 @@ export type EventRow = {
   circle_id?: string | null;
   time_text?: string | null;
   schedule_note?: string | null;
+  holiday_text?: string | null;
   fee_text?: string | null;
+  fee_note?: string | null;
   organizer?: string | null;
   support_text?: string | null;
   contact_name?: string | null;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { CategoryChips } from "@/app/components/CategoryChip";
@@ -12,6 +13,17 @@ import { getEventsByVenueId, isPastEvent } from "@/lib/events";
 import { joinLabels } from "@/lib/labels";
 import { contentHref, replacedSlugPath } from "@/lib/slug";
 import { getVenue } from "@/lib/venues";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { venue } = await getVenue(id);
+  if (!venue) return { title: "施設" };
+  return { title: venue.name };
+}
 
 export default async function VenueDetailPage({
   params,

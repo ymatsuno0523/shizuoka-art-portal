@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import FilterSheet from "@/app/components/FilterSheet";
 import VenueBrowse from "@/app/components/VenueBrowse";
@@ -11,6 +12,10 @@ import {
 } from "@/lib/search-filters";
 import { matchesAnyFilter } from "@/lib/labels";
 import { getVenues, VENUE_KINDS } from "@/lib/venues";
+
+export const metadata: Metadata = {
+  title: "施設",
+};
 
 const VENUE_VIEWS = [
   { id: "list", label: "一覧" },

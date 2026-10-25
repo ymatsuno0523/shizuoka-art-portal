@@ -76,7 +76,9 @@ export default function EventForm({
   const [circleId, setCircleId] = useState(event?.circle_id ?? "");
   const [timeText, setTimeText] = useState(event?.time_text ?? "");
   const [scheduleNote, setScheduleNote] = useState(event?.schedule_note ?? "");
+  const [holidayText, setHolidayText] = useState(event?.holiday_text ?? "");
   const [feeText, setFeeText] = useState(event?.fee_text ?? "");
+  const [feeNote, setFeeNote] = useState(event?.fee_note ?? "");
   const [organizer, setOrganizer] = useState(event?.organizer ?? "");
   const [supportText, setSupportText] = useState(event?.support_text ?? "");
   const [contactName, setContactName] = useState(event?.contact_name ?? "");
@@ -208,7 +210,9 @@ export default function EventForm({
       genre,
       time_text: emptyToNull(timeText),
       schedule_note: emptyToNull(scheduleNote),
+      holiday_text: emptyToNull(holidayText),
       fee_text: emptyToNull(feeText),
+      fee_note: emptyToNull(feeNote),
       circle_id: orgMode === "org" && circleId ? circleId : null,
       organizer: orgMode === "text" ? emptyToNull(organizer) : null,
       support_text: emptyToNull(supportText),
@@ -496,27 +500,49 @@ export default function EventForm({
           <input
             value={timeText}
             onChange={(e) => setTimeText(e.target.value)}
-            placeholder="例: 10:00〜17:00（最終入場 16:30）"
+            placeholder="例: 10:00〜17:00"
             className={`${inputClass} mt-1`}
           />
         </label>
 
         <label className="block text-sm">
-          開催日の補足（任意）
+          時間補足（任意）
           <input
             value={scheduleNote}
             onChange={(e) => setScheduleNote(e.target.value)}
-            placeholder="例: 月曜休、祝日は開館"
+            placeholder="例: 最終入場 16:30"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          休館・休み（任意）
+          <input
+            value={holidayText}
+            onChange={(e) => setHolidayText(e.target.value)}
+            placeholder="例: 月曜休、11/3休館"
             className={`${inputClass} mt-1`}
           />
         </label>
 
         <label className="block text-sm">
           料金（任意）
-          <input
+          <textarea
+            rows={3}
             value={feeText}
             onChange={(e) => setFeeText(e.target.value)}
-            placeholder="例: 一般 1,000円 / 無料"
+            placeholder={"例: 大人 500円\n学生 200円\n小・中学生 100円"}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+
+        <label className="block text-sm">
+          料金補足（任意）
+          <textarea
+            rows={3}
+            value={feeNote}
+            onChange={(e) => setFeeNote(e.target.value)}
+            placeholder={"例: ※（　）内は団体割引\n※65歳以上は証明書提示で割引"}
             className={`${inputClass} mt-1`}
           />
         </label>

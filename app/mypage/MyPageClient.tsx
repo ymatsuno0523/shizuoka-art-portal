@@ -360,6 +360,7 @@ export default function MyPageClient() {
         )}
         <p className="mt-6 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
           <Link href="/mypage/news">お知らせ</Link>
+          <Link href="/mypage/about">このサイトについて</Link>
           <Link href="/mypage/terms">利用規約</Link>
           <Link href="/mypage/privacy">プライバシー</Link>
           <Link href="/mypage/help">ヘルプ</Link>
@@ -417,6 +418,7 @@ export default function MyPageClient() {
 
       <section className="mt-4 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
         <MenuRow href="/mypage/news" title="お知らせ" />
+        <MenuRow href="/mypage/about" title="このサイトについて" />
         <MenuRow href="/mypage/terms" title="利用規約" />
         <MenuRow href="/mypage/privacy" title="プライバシーポリシー" />
         <MenuRow href="/mypage/help" title="ヘルプ" />

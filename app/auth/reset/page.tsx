@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import ResetPasswordClient from "./ResetPasswordClient";
+
+export const metadata: Metadata = {
+  title: "パスワード再設定",
+};
 
 export default function ResetPasswordPage() {
   return (

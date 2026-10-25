@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import ActivityClient from "./ActivityClient";
+
+export const metadata: Metadata = {
+  title: "アクティビティ",
+};
 
 export default function ActivityPage() {
   return (

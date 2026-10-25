@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import EventForm from "@/app/components/EventForm";
 import { getEvent } from "@/lib/events";
 import { createSupabaseClient } from "@/lib/supabase";
@@ -6,6 +7,17 @@ import { replacedSlugPath } from "@/lib/slug";
 import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { event } = await getEvent(id);
+  if (!event) return { title: "イベントを編集" };
+  return { title: `${event.title}を編集` };
+}
 
 export default async function EditEventPage({
   params,

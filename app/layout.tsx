@@ -17,8 +17,12 @@ const notoSansJp = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Shizuoka Art Portal | 静岡アートポータル",
-  description: "静岡県内のアート・イラスト・展覧会・ワークショップ情報",
+  title: {
+    default: "Shizuoka Art Portal | 静岡アートポータル",
+    template: "%s | 静岡アートポータル",
+  },
+  description:
+    "静岡のアート情報を一元化！県内の展覧会・ワークショップ・アート施設・団体情報をまるごとチェック。カレンダー表示やエリア地図検索で、いま見たい・行きたいアートがすぐに見つかるポータルサイトです。",
 };
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;

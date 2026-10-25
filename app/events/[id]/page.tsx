@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
@@ -16,6 +17,17 @@ import OwnerActions from "@/app/components/OwnerActions";
 import PdfLinks from "@/app/components/PdfLinks";
 import { formatEventDateRange, getEvent } from "@/lib/events";
 import { contentHref, replacedSlugPath } from "@/lib/slug";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { event } = await getEvent(id);
+  if (!event) return { title: "イベント" };
+  return { title: event.title };
+}
 
 export default async function EventDetailPage({
   params,
@@ -71,7 +83,8 @@ export default async function EventDetailPage({
       <dl className="mt-8 divide-y divide-zinc-200 dark:divide-zinc-800">
         <InfoRow label="開催日" value={dateLabel} />
         <InfoRow label="開催時間" value={event.time_text} />
-        <InfoRow label="補足" value={event.schedule_note} />
+        <InfoRow label="時間補足" value={event.schedule_note} />
+        <InfoRow label="休館・休み" value={event.holiday_text} />
         {event.placeLabel ? (
           event.venueLinked ? (
             <div className={infoGridClass}>
@@ -98,6 +111,7 @@ export default async function EventDetailPage({
         <InfoRow label="住所" value={event.pinAddress} />
         <InfoRow label="地域" value={event.pinAddress?.trim() ? null : event.region} />
         <InfoRow label="料金" value={event.fee_text} />
+        <InfoRow label="料金補足" value={event.fee_note} />
         {event.organizerLabel ? (
           event.circleLinked ? (
             <div className={infoGridClass}>
