@@ -365,6 +365,13 @@ export function isPastEvent(
   return eventEndKey(event) < today;
 }
 
+export function isCurrentEvent(
+  event: { start_at: string; end_at: string | null },
+  today = tokyoTodayKey(),
+) {
+  return eventDateKey(event.start_at) <= today && eventEndKey(event) >= today;
+}
+
 export function formatEventDateRange(startAt: string, endAt?: string | null) {
   const startLabel = formatEventDate(startAt);
   if (!endAt || eventDateKey(startAt) === eventDateKey(endAt)) return startLabel;

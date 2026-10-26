@@ -1,3 +1,5 @@
+import { externalHref } from "@/lib/urls";
+
 export const infoGridClass =
   "grid grid-cols-[5.5rem_1fr] gap-2 py-2 text-sm";
 
@@ -24,18 +26,19 @@ export function InfoLink({
   label: string;
   href?: string | null;
 }) {
-  if (!href) return null;
+  const url = externalHref(href);
+  if (!url) return null;
   return (
     <div className={infoGridClass}>
       <dt className="text-zinc-500">{label}</dt>
       <dd>
         <a
-          href={href}
+          href={url}
           className="break-all underline"
           target="_blank"
           rel="noopener noreferrer"
         >
-          {href}
+          {url}
         </a>
       </dd>
     </div>

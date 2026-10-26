@@ -22,6 +22,7 @@ import {
   type PendingAttachment,
 } from "@/lib/files";
 import { SNS_LINKS } from "@/lib/sns";
+import { externalHref } from "@/lib/urls";
 import { replaceAppHref } from "@/lib/tab-nav";
 import {
   compressImageFile,
@@ -149,10 +150,10 @@ export default function CircleForm({
       representative: emptyToNull(representative),
       phone: emptyToNull(phone),
       email: emptyToNull(email),
-      website_url: emptyToNull(websiteUrl),
-      sns_instagram: emptyToNull(sns.sns_instagram),
-      sns_x: emptyToNull(sns.sns_x),
-      sns_line: emptyToNull(sns.sns_line),
+      website_url: externalHref(websiteUrl),
+      sns_instagram: externalHref(sns.sns_instagram),
+      sns_x: externalHref(sns.sns_x),
+      sns_line: externalHref(sns.sns_line),
       slug: parsedSlug.slug,
     };
 

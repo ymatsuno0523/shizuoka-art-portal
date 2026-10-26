@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import { SNS_LINKS, type SnsKey } from "@/lib/sns";
 import { infoGridClass } from "@/app/components/InfoRow";
+import { externalHref } from "@/lib/urls";
 
 const iconClass = "h-5 w-5";
 
@@ -42,7 +43,7 @@ export default function SnsIconLinks({
   urls: Partial<Record<SnsKey, string | null | undefined>>;
 }) {
   const links = SNS_LINKS.flatMap((item) => {
-    const href = urls[item.key]?.trim();
+    const href = externalHref(urls[item.key]);
     return href ? [{ ...item, href }] : [];
   });
   if (links.length === 0) return null;

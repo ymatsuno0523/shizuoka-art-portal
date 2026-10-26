@@ -33,6 +33,7 @@ import {
   MAX_EVENT_IMAGES,
   storagePathFromPublicUrl,
 } from "@/lib/images";
+import { externalHref } from "@/lib/urls";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-background px-3 py-2 text-sm dark:border-zinc-700";
@@ -219,7 +220,7 @@ export default function EventForm({
       contact_name: emptyToNull(contactName),
       contact_phone: emptyToNull(contactPhone),
       contact_email: emptyToNull(contactEmail),
-      website_url: emptyToNull(websiteUrl),
+      website_url: externalHref(websiteUrl),
       parking_text: emptyToNull(parkingText),
       slug: parsedSlug.slug,
     };

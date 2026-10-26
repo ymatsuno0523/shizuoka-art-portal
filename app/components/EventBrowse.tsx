@@ -8,6 +8,7 @@ import NoImage from "@/app/components/NoImage";
 import PlacesMap from "@/app/components/PlacesMap";
 import {
   formatEventDateRange,
+  isCurrentEvent,
   isPastEvent,
   sortEventsForList,
   type EventWithPlace,
@@ -101,6 +102,10 @@ export default function EventBrowse({
                         {isPastEvent(event) ? (
                           <span className="inline-flex h-5 items-center rounded-full bg-zinc-100 px-2.5 text-[10px] font-semibold leading-none text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                             過去の展示
+                          </span>
+                        ) : isCurrentEvent(event) ? (
+                          <span className="inline-flex h-4 items-center rounded-full bg-[#db7e45] px-2 text-[10px] font-semibold leading-none text-white">
+                            会期中
                           </span>
                         ) : null}
                       </div>

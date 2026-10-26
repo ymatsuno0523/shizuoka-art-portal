@@ -23,6 +23,7 @@ import { requiredMessage, toUserFormError } from "@/lib/form-errors";
 import { contentHref, isMissingSlugColumn, parseSlug, withoutSlug } from "@/lib/slug";
 import { replaceAppHref } from "@/lib/tab-nav";
 import { SNS_LINKS } from "@/lib/sns";
+import { externalHref } from "@/lib/urls";
 import type { VenueImage, VenueRow } from "@/lib/venues";
 import {
   compressImageFile,
@@ -166,10 +167,10 @@ export default function VenueForm({
       access_car: emptyToNull(accessCar),
       parking_text: emptyToNull(parkingText),
       payment_text: emptyToNull(paymentText),
-      website_url: emptyToNull(websiteUrl),
-      sns_instagram: emptyToNull(sns.sns_instagram),
-      sns_x: emptyToNull(sns.sns_x),
-      sns_line: emptyToNull(sns.sns_line),
+      website_url: externalHref(websiteUrl),
+      sns_instagram: externalHref(sns.sns_instagram),
+      sns_x: externalHref(sns.sns_x),
+      sns_line: externalHref(sns.sns_line),
       slug: parsedSlug.slug,
     };
 

@@ -139,7 +139,7 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-y-1">
+      <div className="grid grid-cols-7 gap-y-2">
         {cells.map((day, index) => {
           if (!day) return <div key={`empty-${index}`} />;
           const key = ymdKey(cursor.year, cursor.month, day);
@@ -155,27 +155,27 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
               key={key}
               type="button"
               onClick={() => setSelectedKey(key)}
-              className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm ${
-                isSelected && !isToday ? "bg-zinc-100 dark:bg-zinc-800" : ""
-              } ${
-                isToday
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : ""
-              }`}
+              className="relative mx-auto flex h-9 w-9 items-start justify-center pt-[2px] text-sm"
             >
-              {day}
+              <span
+                className={`flex h-[26px] w-[26px] items-center justify-center rounded-full ${
+                  isToday
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : isSelected
+                      ? "bg-zinc-100 dark:bg-zinc-800"
+                      : ""
+                }`}
+              >
+                {day}
+              </span>
               {mark ? (
                 <span
                   className={`pointer-events-none absolute bottom-0 left-1/2 h-[6px] w-[6px] -translate-x-1/2 rounded-full ${
-                    mark === "short"
-                      ? isToday
-                        ? "bg-white dark:bg-zinc-900"
-                        : "bg-zinc-900 dark:bg-zinc-100"
-                      : ""
+                    mark === "short" ? "bg-zinc-900 dark:bg-zinc-100" : ""
                   }`}
                   style={
                     mark === "ongoing"
-                      ? { backgroundColor: isToday ? "#f3d2b8" : ONGOING_DOT }
+                      ? { backgroundColor: ONGOING_DOT }
                       : undefined
                   }
                 />
@@ -195,7 +195,7 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
             className="h-[6px] w-[6px] rounded-full"
             style={{ backgroundColor: ONGOING_DOT }}
           />
-          1週間以上の継続イベント
+          1週間以上の継続イベント（休館日含む）
         </span>
       </div>
 
