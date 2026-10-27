@@ -393,11 +393,19 @@ export function sortEventsForList<T extends { start_at: string; end_at: string |
       return eventDateKey(b.start_at).localeCompare(eventDateKey(a.start_at));
     }
 
-    const aStart = eventDateKey(a.start_at);
-    const bStart = eventDateKey(b.start_at);
-    const aKey = aStart <= today ? `0-${eventEndKey(a)}` : `1-${aStart}`;
-    const bKey = bStart <= today ? `0-${eventEndKey(b)}` : `1-${bStart}`;
-    if (aKey !== bKey) return aKey.localeCompare(bKey);
-    return eventDateKey(a.start_at).localeCompare(eventDateKey(b.start_at));
+    const aCurrent = isCurrentEvent(a, today);
+    const bCurrent = isCurrentEvent(b, today);
+    if (aCurrent !== bCurrent) return aCurrent ? -1 : 1;
+
+    // 開催中・未開始とも、同日なら終了が早い方を先に
+    if (aCurrent) {
+      const byEnd = eventEndKey(a).localeCompare(eventEndKey(b));
+      if (byEnd !== 0) return byEnd;
+      return eventDateKey(a.start_at).localeCompare(eventDateKey(b.start_at));
+    }
+
+    const byStart = eventDateKey(a.start_at).localeCompare(eventDateKey(b.start_at));
+    if (byStart !== 0) return byStart;
+    return eventEndKey(a).localeCompare(eventEndKey(b));
   });
 }

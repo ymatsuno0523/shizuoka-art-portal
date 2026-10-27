@@ -48,7 +48,7 @@ export default function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${
+                className={`flex flex-col items-center gap-0 py-2.5 text-[11px] ${
                   active
                     ? "font-semibold text-foreground"
                     : "text-zinc-500 dark:text-zinc-400"
@@ -84,7 +84,7 @@ function CalendarIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       strokeWidth={active ? 2.2 : 1.8}
@@ -100,7 +100,7 @@ function VenueIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       strokeWidth={active ? 2.2 : 1.8}
@@ -116,7 +116,7 @@ function CircleIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       strokeWidth={active ? 2.2 : 1.8}
@@ -134,7 +134,7 @@ function UserIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       strokeWidth={active ? 2.2 : 1.8}
