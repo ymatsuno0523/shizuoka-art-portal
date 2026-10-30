@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { formatEventDate } from "@/lib/events";
+import { eventEndKey, formatEventDate } from "@/lib/events";
 import { contentHref } from "@/lib/slug";
 
 type CalendarEvent = {
@@ -62,6 +62,16 @@ function isOngoingEvent(event: CalendarEvent) {
   return eventDayKeys(event.start_at, event.end_at).length >= ONGOING_MIN_DAYS;
 }
 
+/** 通常を上、継続を下。同種は終了が早い方を上。終了同日は順不同。 */
+function sortDayEvents(events: CalendarEvent[]) {
+  return [...events].sort((a, b) => {
+    const aOngoing = isOngoingEvent(a);
+    const bOngoing = isOngoingEvent(b);
+    if (aOngoing !== bOngoing) return aOngoing ? 1 : -1;
+    return eventEndKey(a).localeCompare(eventEndKey(b));
+  });
+}
+
 function monthCells(year: number, month: number) {
   const startWeekday = new Date(
     `${year}-${String(month).padStart(2, "0")}-01T00:00:00+09:00`,
@@ -95,6 +105,9 @@ export default function EventCalendar({ events }: { events: CalendarEvent[] }) {
         list.push(event);
         map.set(key, list);
       }
+    }
+    for (const [key, list] of map) {
+      map.set(key, sortDayEvents(list));
     }
     return map;
   }, [events]);
