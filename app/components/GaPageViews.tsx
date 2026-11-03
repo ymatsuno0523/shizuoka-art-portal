@@ -13,22 +13,12 @@ declare global {
 
 function sendPageView(gaId: string, pagePath: string) {
   if (typeof window.gtag !== "function") return;
-  // 各ページで metadata が共通のため、タイトルだけだと1件にまとまる。
-  // 計測上はパスを含めて区別する（document.title 自体は変えない）
-  const pageTitle =
-    pagePath === "/"
-      ? document.title
-      : `${document.title} · ${pagePath}`;
-  window.gtag("config", gaId, {
-    send_page_view: false,
-    page_path: pagePath,
-    page_title: pageTitle,
-    page_location: window.location.href,
-  });
+  // SPAの遷移は自前の page_view だけ送る。
+  // config を毎遷移呼ぶ／タイトルにパスを足すと、レポートが二重・分散しやすい。
   window.gtag("event", "page_view", {
     send_to: gaId,
     page_path: pagePath,
-    page_title: pageTitle,
+    page_title: document.title,
     page_location: window.location.href,
   });
 }
@@ -41,7 +31,6 @@ export default function GaPageViews({ gaId }: { gaId: string }) {
 
   useEffect(() => {
     if (ready) return;
-    // onLoad を逃しても、gtag が入れば計測を開始する
     if (typeof window.gtag === "function") {
       setReady(true);
       return;
@@ -62,9 +51,10 @@ export default function GaPageViews({ gaId }: { gaId: string }) {
   useEffect(() => {
     if (!ready) return;
     const pagePath = search ? `${pathname}?${search}` : pathname;
+    // タイトルが metadata 反映後になるよう、直後ではなく少し遅らせる
     const timer = window.setTimeout(() => {
       sendPageView(gaId, pagePath);
-    }, 0);
+    }, 100);
     return () => window.clearTimeout(timer);
   }, [ready, pathname, search, gaId]);
 

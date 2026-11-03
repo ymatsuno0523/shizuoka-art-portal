@@ -36,7 +36,7 @@ export function InfoLink({
           href={url}
           className="break-all underline"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
         >
           {url}
         </a>

@@ -61,7 +61,7 @@ export default function SnsIconLinks({
               aria-label={item.label}
               title={item.label}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="text-zinc-700 hover:text-foreground dark:text-zinc-300"
             >
               <Icon />
