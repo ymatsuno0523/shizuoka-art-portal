@@ -56,6 +56,6 @@ export default function EventViewCount({
   if (count < MIN_DISPLAY) return null;
 
   return (
-    <p className="mt-2 text-xs text-zinc-500 tabular-nums">閲覧 {count}</p>
+    <p className="mt-2 text-xs text-zinc-500 tabular-nums">閲覧数 {count}</p>
   );
 }
